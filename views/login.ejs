@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Bridge — Logged In</title>
+<link href="The%20Bridge%20%E2%80%94%20Logged%20In_files/css2_sKDU.css" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --g:#1A4A35;--g2:#3D5C4F;--g3:#2d6a4f;
+  --bronze:#A0724A;--bronze2:#c49268;
+  --cream:#FAF7F0;--cream2:#F0EBE0;--cream3:#E8E0D0;
+  --glight:#a0c4b4;--gxlight:#e0ede8;
+  --td:#1A2E24;--tm:#4a5e56;--tl:#7a9080;
+  --border:#d8d0c4;
+  --success:#2D6A4F;--warning:#A0724A;--danger:#8B3A3A;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--td);font-size:14px;line-height:1.6;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* LOGIN SCREEN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--g);padding:24px;}
+.login-card{background:#fff;border-radius:16px;padding:40px;width:100%;max-width:420px;}
+.login-logo{font-family:'DM Serif Display',serif;font-size:28px;color:var(--g);margin-bottom:6px;}
+.login-sub{font-size:13px;color:var(--tm);margin-bottom:32px;}
+.login-label{font-size:12px;font-weight:500;color:var(--td);margin-bottom:6px;display:block;}
+.login-input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:10px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--td);background:#fff;outline:none;margin-bottom:16px;transition:border-color 0.15s;}
+.login-input:focus{border-color:var(--g);}
+.login-btn{width:100%;background:var(--g);color:#fff;font-size:14px;font-family:'DM Sans',sans-serif;padding:12px;border-radius:6px;border:none;cursor:pointer;font-weight:500;transition:background 0.15s;margin-top:8px;}
+.login-btn:hover{background:var(--g2);}
+.login-roles{display:flex;gap:10px;margin-bottom:24px;}
+.role-card{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all 0.15s;text-align:center;}
+.role-card:hover,.role-card.active{border-color:var(--g);background:var(--cream);}
+.role-card-icon{font-size:20px;margin-bottom:6px;color:var(--g);}
+.role-card-label{font-size:12px;font-weight:500;color:var(--td);}
+.role-card-desc{font-size:11px;color:var(--tl);margin-top:2px;}
+.login-note{font-size:11px;color:var(--tl);text-align:center;margin-top:16px;}
+
+/* NAV */
+nav{background:var(--g);display:flex;align-items:center;padding:0 32px;height:56px;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'DM Serif Display',serif;color:#fff;font-size:20px;margin-right:32px;cursor:pointer;letter-spacing:0.01em;}
+.nav-links{display:flex;gap:4px;flex:1;align-items:center;}
+.nav-link{color:var(--glight);font-size:12px;cursor:pointer;padding:6px 10px;border-radius:4px;transition:all 0.15s;white-space:nowrap;}
+.nav-link:hover,.nav-link.active{color:#fff;background:rgba(255,255,255,0.12);}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:12px;}
+.nav-county{background:var(--g2);color:var(--gxlight);font-size:11px;padding:4px 10px;border-radius:4px;white-space:nowrap;}
+.nav-user{display:flex;align-items:center;gap:8px;}
+.nav-avatar{width:30px;height:30px;border-radius:50%;background:var(--bronze);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#fff;cursor:pointer;}
+.nav-username{font-size:12px;color:var(--gxlight);}
+.nav-logout{background:rgba(255,255,255,0.12);color:var(--gxlight);font-size:11px;padding:5px 12px;border-radius:5px;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:background 0.15s;}
+.nav-logout:hover{background:rgba(255,255,255,0.2);}
+
+/* ROLE BADGE */
+.role-badge{font-size:10px;padding:3px 8px;border-radius:10px;font-weight:500;}
+.role-counselor{background:#E8F4EA;color:#1A4A35;}
+.role-admin{background:#FDF0E8;color:#A0724A;}
+
+/* DASHBOARD LAYOUT */
+.dashboard{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 56px);}
+.sidebar{background:#fff;border-right:1px solid var(--border);padding:20px 0;}
+.sidebar-section{margin-bottom:8px;}
+.sidebar-label{font-size:10px;font-weight:500;color:var(--tl);text-transform:uppercase;letter-spacing:0.07em;padding:8px 20px 4px;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:var(--tm);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent;}
+.sidebar-item:hover{background:var(--cream2);color:var(--td);}
+.sidebar-item.active{background:var(--cream);color:var(--g);border-left-color:var(--g);font-weight:500;}
+.sidebar-item-icon{font-size:15px;color:inherit;}
+.sidebar-badge{margin-left:auto;background:var(--bronze);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;}
+.main-content{padding:28px 32px;background:var(--cream);}
+
+/* PAGE HEADERS */
+.page-header{margin-bottom:24px;}
+.page-title{font-family:'DM Serif Display',serif;font-size:26px;color:var(--g);margin-bottom:4px;}
+.page-subtitle{font-size:13px;color:var(--tm);}
+
+/* STAT CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:16px;}
+.stat-number{font-family:'DM Serif Display',serif;font-size:28px;color:var(--g);line-height:1;margin-bottom:4px;}
+.stat-label{font-size:11px;color:var(--tl);}
+.stat-delta{font-size:11px;color:var(--success);margin-top:4px;}
+
+/* CARDS */
+.content-card{background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;margin-bottom:16px;}
+.content-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.content-card-title{font-size:14px;font-weight:500;color:var(--td);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;border:none;transition:all 0.15s;font-weight:500;}
+.btn-primary{background:var(--g);color:#fff;}
+.btn-primary:hover{background:var(--g2);}
+.btn-secondary{background:#fff;color:var(--g);border:1.5px solid var(--g);}
+.btn-secondary:hover{background:var(--cream2);}
+.btn-bronze{background:var(--bronze);color:#fff;}
+.btn-bronze:hover{background:var(--bronze2);}
+.btn-sm{padding:5px 12px;font-size:11px;}
+.btn-danger{background:#8B3A3A;color:#fff;}
+.btn-danger:hover{background:#a04444;}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{background:#235a3e;}
+
+/* FORM */
+.form-group{margin-bottom:16px;}
+.form-label{font-size:12px;font-weight:500;color:var(--td);margin-bottom:6px;display:block;}
+.form-input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:9px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--td);background:#fff;outline:none;transition:border-color 0.15s;}
+.form-input:focus{border-color:var(--g);}
+.form-select{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:9px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--td);background:#fff;outline:none;cursor:pointer;}
+.form-textarea{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:9px 14px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--td);background:#fff;outline:none;resize:vertical;min-height:90px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-hint{font-size:11px;color:var(--tl);margin-top:4px;}
+
+/* UPLOAD ZONE */
+.upload-zone{border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;transition:all 0.15s;background:var(--cream);}
+.upload-zone:hover{border-color:var(--g);background:var(--cream2);}
+.upload-icon{font-size:28px;color:var(--tl);margin-bottom:8px;}
+.upload-label{font-size:13px;color:var(--tm);margin-bottom:4px;}
+.upload-hint{font-size:11px;color:var(--tl);}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{font-size:11px;font-weight:500;color:var(--tl);text-transform:uppercase;letter-spacing:0.05em;padding:8px 12px;border-bottom:1px solid var(--border);text-align:left;}
+.data-table td{font-size:12px;color:var(--td);padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--cream);}
+
+/* STATUS BADGES */
+.status{font-size:10px;padding:3px 8px;border-radius:10px;font-weight:500;white-space:nowrap;}
+.status-pending{background:#FDF0E8;color:#A0724A;}
+.status-approved{background:#E8F4EA;color:#1A4A35;}
+.status-rejected{background:#FAE8E8;color:#8B3A3A;}
+.status-live{background:#E8F4EA;color:#1A4A35;}
+.status-draft{background:#F0EBE0;color:#5a5046;}
+
+/* TAGS */
+.tag{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:500;}
+.tag-type{background:var(--g);color:var(--gxlight);}
+.tag-county{background:var(--g2);color:var(--gxlight);}
+.tag-all{background:var(--cream2);color:var(--g2);border:1px solid var(--cream3);}
+
+/* NOTIFICATION */
+.notification{background:#E8F4EA;border:1px solid #a0c4b4;border-radius:8px;padding:12px 16px;font-size:12px;color:var(--g);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.notification-warning{background:#FDF0E8;border-color:#d4a96a;color:#7a4a20;}
+
+/* QUEUE ITEM */
+.queue-item{background:#fff;border-radius:10px;border:1px solid var(--border);padding:16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:16px;}
+.queue-item-body{flex:1;}
+.queue-item-title{font-size:13px;font-weight:500;color:var(--td);margin-bottom:4px;}
+.queue-item-meta{font-size:11px;color:var(--tl);margin-bottom:8px;line-height:1.6;}
+.queue-item-actions{display:flex;gap:8px;flex-shrink:0;align-items:flex-start;}
+
+/* WELCOME BANNER */
+.welcome-banner{background:var(--g);border-radius:12px;padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;}
+.welcome-text h2{font-family:'DM Serif Display',serif;font-size:22px;color:#fff;margin-bottom:4px;}
+.welcome-text p{font-size:13px;color:var(--glight);}
+.welcome-actions{display:flex;gap:10px;}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{padding:8px 18px;font-size:13px;color:var(--tl);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;}
+.tab:hover{color:var(--td);}
+.tab.active{color:var(--g);border-bottom-color:var(--g);font-weight:500;}
+
+/* ACTIVITY FEED */
+.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;background:var(--g);margin-top:5px;flex-shrink:0;}
+.activity-text{font-size:12px;color:var(--tm);line-height:1.6;}
+.activity-time{font-size:11px;color:var(--tl);margin-top:2px;}
+
+/* MY SUBMISSIONS */
+.submission-item{background:#fff;border-radius:8px;border:1px solid var(--border);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.submission-info{flex:1;}
+.submission-title{font-size:13px;font-weight:500;color:var(--td);margin-bottom:3px;}
+.submission-meta{font-size:11px;color:var(--tl);}
+
+/* CALENDAR ITEM */
+.calendar-item{background:#fff;border-radius:8px;border:1px solid var(--border);padding:14px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;}
+.cal-date{background:var(--g);color:var(--gxlight);border-radius:6px;padding:6px 10px;text-align:center;min-width:44px;flex-shrink:0;}
+.cal-month{font-size:9px;font-weight:500;text-transform:uppercase;display:block;}
+.cal-day{font-family:'DM Serif Display',serif;font-size:20px;line-height:1.1;display:block;}
+.cal-info-title{font-size:13px;font-weight:500;color:var(--td);margin-bottom:3px;}
+.cal-info-meta{font-size:11px;color:var(--tl);}
+
+@media(max-width:768px){
+  .dashboard{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .stat-row{grid-template-columns:1fr 1fr;}
+  .form-row{grid-template-columns:1fr;}
+  .main-content{padding:20px;}
+}
+</style>
+</head>
+<body>
+
+<div class="page active" id="page-login">
+<div class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">The Bridge</div>
+    <p class="login-sub">Mountainland Region Counselors and Advisors Hub</p>
+    <div class="form-group">
+      <label class="login-label">Email address</label>
+      <input class="login-input" type="email" placeholder="you@district.edu">
+    </div>
+    <div class="form-group">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" placeholder="••••••••">
+    </div>
+    <p style="font-size:11px;color:var(--tl);margin-bottom:20px;">Your access level is determined by your account settings. Counselors and admins see different views after logging in.</p>
+    <div style="display:flex;gap:10px;">
+      <button class="login-btn" onclick="loginAs('counselor')" style="background:var(--g);">Log in as Counselor</button>
+      <button class="login-btn" onclick="loginAs('admin')" style="background:var(--bronze);">Log in as Admin</button>
+    </div>
+    <p class="login-note">Access is managed by your regional pathways administrator.<br>Contact StefanieA@uvu.edu for access requests.</p>
+  </div>
+</div>
+</div><!-- ═══════════════ LOGIN SCREEN -->
+</body></html>

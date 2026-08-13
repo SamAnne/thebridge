@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans); }
+    /* .G = #1A4A35;  */
+    :root {
+      --g: #1A4A35;
+      --g2: #3D5C4F;
+      --bronze: #A0724A;
+      --cream: #FAF7F0;
+      --cream2: #F0EBE0;
+      --glight: #a0c4b4;
+      --gxlight: #e0ede8;
+    }
+    .nav { background:#1A4A35; display:flex; align-items:center; padding:0 24px; height:52px; gap:0; }
+    .nav-logo { color:#fff; font-size:15px; font-weight:500; letter-spacing:0.02em; margin-right:28px; }
+    .nav-links { display:flex; gap:18px; flex:1; }
+    .nav-link { color:#a0c4b4; font-size:12px; cursor:pointer; }
+    .nav-link:hover { color:#fff; }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .nav-county { background:#3D5C4F; color:#e0ede8; font-size:11px; padding:4px 10px; border-radius:4px; }
+    .nav-login { background:#A0724A; color:#fff; font-size:11px; padding:5px 14px; border-radius:5px; cursor:pointer; border:none; }
+    .hero { background:#FAF7F0; padding:40px 24px 32px; border-bottom:1px solid #ddd8d0; }
+    .hero-headline { font-size:26px; font-weight:500; color:#1A4A35; margin-bottom:10px; line-height:1.25; }
+    .hero-sub { font-size:13px; color:#4a5e56; line-height:1.7; max-width:520px; margin-bottom:24px; }
+    .county-prompt { font-size:12px; color:#3D5C4F; font-weight:500; margin-bottom:10px; }
+    .county-btns { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:28px; }
+    .county-btn { padding:9px 20px; border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; border:1.5px solid #1A4A35; background:#fff; color:#1A4A35; transition:all 0.15s; }
+    .county-btn.active { background:#1A4A35; color:#e0ede8; border-color:#1A4A35; }
+    .county-btn:hover { background:#1A4A35; color:#e0ede8; }
+    .search-row { display:flex; gap:8px; max-width:540px; }
+    .search-input { flex:1; border:1.5px solid #3D5C4F; border-radius:6px; padding:10px 14px; font-size:13px; color:#1A4A35; background:#fff; outline:none; }
+    .search-input::placeholder { color:#a0b8b0; }
+    .search-btn { background:#1A4A35; color:#fff; border:none; border-radius:6px; padding:10px 18px; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+    .tiles { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; padding:20px 24px; background:#F0EBE0; border-bottom:1px solid #ddd8d0; }
+    .tile { background:#fff; border-radius:8px; padding:14px; border:1px solid #ddd8d0; cursor:pointer; }
+    .tile-icon { font-size:20px; color:#1A4A35; margin-bottom:8px; }
+    .tile-label { font-size:12px; font-weight:500; color:#1A4A35; margin-bottom:3px; }
+    .tile-desc { font-size:11px; color:#6a8070; }
+    .transition-band { background:#3D5C4F; padding:14px 24px; text-align:center; }
+    .transition-band span { font-size:13px; font-weight:500; color:#e0ede8; letter-spacing:0.01em; }
+    .section { padding:24px; background:#FAF7F0; }
+    .section-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+    .section-title { font-size:15px; font-weight:500; color:#1A4A35; }
+    .section-link { font-size:12px; color:#A0724A; cursor:pointer; }
+    .cards-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+    .card { background:#fff; border-radius:10px; border:1px solid #ddd8d0; padding:16px; }
+    .card-tags { display:flex; gap:5px; margin-bottom:8px; flex-wrap:wrap; }
+    .tag { font-size:10px; padding:3px 8px; border-radius:4px; font-weight:500; }
+    .tag-type { background:#1A4A35; color:#e0ede8; }
+    .tag-county { background:#3D5C4F; color:#e0ede8; }
+    .tag-all { background:#F0EBE0; color:#3D5C4F; border:1px solid #c8d8d0; }
+    .card-title { font-size:13px; font-weight:500; color:#1A4A35; margin-bottom:5px; line-height:1.4; }
+    .card-desc { font-size:11px; color:#5a6e64; line-height:1.6; margin-bottom:12px; }
+    .card-action { display:inline-block; background:#A0724A; color:#fff; font-size:11px; padding:5px 12px; border-radius:5px; cursor:pointer; border:none; }
+    .events-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+    .event-card { background:#fff; border-radius:10px; border:1px solid #ddd8d0; padding:16px; display:flex; gap:14px; }
+    .event-date { background:#1A4A35; color:#e0ede8; border-radius:6px; padding:8px 10px; text-align:center; min-width:44px; }
+    .event-date .month { font-size:9px; font-weight:500; text-transform:uppercase; }
+    .event-date .day { font-size:18px; font-weight:500; line-height:1; }
+    .event-info .event-title { font-size:12px; font-weight:500; color:#1A4A35; margin-bottom:4px; }
+    .event-info .event-meta { font-size:11px; color:#6a8070; line-height:1.6; }
+    .section-alt { padding:24px; background:#F0EBE0; border-top:1px solid #ddd8d0; }
+    .footer { background:#1A4A35; padding:28px 24px 16px; }
+    .footer-grid { display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr; gap:24px; margin-bottom:20px; }
+    .footer-brand { color:#fff; font-size:14px; font-weight:500; margin-bottom:6px; }
+    .footer-tagline { color:#7ab89a; font-size:11px; line-height:1.7; }
+    .footer-col-title { color:#a0c4b4; font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+    .footer-links { display:flex; flex-direction:column; gap:6px; }
+    .footer-link { color:#7ab89a; font-size:11px; cursor:pointer; }
+    .footer-bottom { border-top:1px solid #2d6a4f; padding-top:12px; }
+    .footer-copy { color:#4a8a6a; font-size:11px; }
+  </style>
+</head>
+<body>
+  <h2 class="sr-only">The Bridge — Mountainland Region Counselors and Advisors Hub prototype</h2>
+
+  <div class="nav">
+    <span class="nav-logo">The Bridge</span>
+    <div class="nav-links">
+      <span class="nav-link">About</span>
+      <span class="nav-link">Pathways</span>
+      <span class="nav-link">Resources</span>
+      <span class="nav-link">Events</span>
+      <span class="nav-link">Professional Development</span>
+      <span class="nav-link">Connect</span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-county" id="nav-county" style="display:none;"></span>
+      <button class="nav-login" onclick="window.location.href='/login'"><i class="ti ti-lock" style="font-size:12px;" aria-hidden="true"></i> Login</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-headline">Your region. Your students. Your hub.</div>
+    <div class="hero-sub">One place for every resource you need to guide students from K-12 through postsecondary and beyond.</div>
+    <div class="county-prompt">Select your county to personalize your experience</div>
+    <div class="county-btns">
+      <button class="county-btn" onclick="selectCounty('Utah County')">Utah County</button>
+      <button class="county-btn" onclick="selectCounty('Summit County')">Summit County</button>
+      <button class="county-btn" onclick="selectCounty('Wasatch County')">Wasatch County</button>
+    </div>
+    <div class="search-row">
+      <input class="search-input" type="text" placeholder="Search pathways, scholarships, templates..." id="search-input" />
+      <button class="search-btn"><i class="ti ti-search" style="font-size:14px;" aria-hidden="true"></i> Search</button>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="tile-icon"><i class="ti ti-map" aria-hidden="true"></i></div>
+      <div class="tile-label">Pathway maps</div>
+      <div class="tile-desc">K-12 to postsecondary routes</div>
+    </div>
+    <div class="tile">
+      <div class="tile-icon"><i class="ti ti-award" aria-hidden="true"></i></div>
+      <div class="tile-label">Scholarship database</div>
+      <div class="tile-desc">Regional and statewide funding</div>
+    </div>
+    <div class="tile">
+      <div class="tile-icon"><i class="ti ti-file" aria-hidden="true"></i></div>
+      <div class="tile-label">Advising templates</div>
+      <div class="tile-desc">Ready-to-use counselor tools</div>
+    </div>
+    <div class="tile">
+      <div class="tile-icon"><i class="ti ti-calendar" aria-hidden="true"></i></div>
+      <div class="tile-label">Upcoming events</div>
+      <div class="tile-desc">Workshops and deadlines</div>
+    </div>
+  </div>
+
+  <div class="transition-band">
+    <span>Tools for every student. Resources for every counselor.</span>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title" id="pathways-title">Pathways</span>
+      <span class="section-link">View all <i class="ti ti-arrow-right" style="font-size:12px;" aria-hidden="true"></i></span>
+    </div>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Pathway map</span><span class="tag tag-county" id="card-county-1">Utah County</span></div>
+        <div class="card-title">Postsecondary Pathways Guide</div>
+        <div class="card-desc">Routes from high school to UVU, U of U, and regional colleges.</div>
+        <button class="card-action">View</button>
+      </div>
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Pathway map</span><span class="tag tag-all">All counties</span></div>
+        <div class="card-title">Workforce Training Options</div>
+        <div class="card-desc">Industry-aligned training programs and certifications across the region.</div>
+        <button class="card-action">View</button>
+      </div>
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Directory</span><span class="tag tag-all">All counties</span></div>
+        <div class="card-title">Industry Partners Directory</div>
+        <div class="card-desc">Regional employers and postsecondary partners available for student connections.</div>
+        <button class="card-action">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-alt">
+    <div class="section-header">
+      <span class="section-title">Resources</span>
+      <span class="section-link">View all <i class="ti ti-arrow-right" style="font-size:12px;" aria-hidden="true"></i></span>
+    </div>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Scholarship</span><span class="tag tag-county" id="card-county-2">Utah County</span></div>
+        <div class="card-title">Regional Scholarship Database</div>
+        <div class="card-desc">Curated scholarships for Mountainland Region students.</div>
+        <button class="card-action">Browse</button>
+      </div>
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Template</span><span class="tag tag-all">All counties</span></div>
+        <div class="card-title">Student Advising Template Pack</div>
+        <div class="card-desc">Meeting notes, action plans, and follow-up forms for daily advising use.</div>
+        <button class="card-action">Download</button>
+      </div>
+      <div class="card">
+        <div class="card-tags"><span class="tag tag-type">Pathway map</span><span class="tag tag-all">All counties</span></div>
+        <div class="card-title">Post-Baccalaureate Pathways</div>
+        <div class="card-desc">Graduate programs, professional certifications, and advanced credentials.</div>
+        <button class="card-action">View</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Upcoming events</span>
+      <span class="section-link">View all <i class="ti ti-arrow-right" style="font-size:12px;" aria-hidden="true"></i></span>
+    </div>
+    <div class="events-grid">
+      <div class="event-card">
+        <div class="event-date"><div class="month">Jun</div><div class="day">4</div></div>
+        <div class="event-info">
+          <div class="event-title">K-16 Alliance Counselor Conference</div>
+          <div class="event-meta">UVU Campus · All counties<br>Registration open</div>
+        </div>
+      </div>
+      <div class="event-card">
+        <div class="event-date"><div class="month">Jun</div><div class="day">12</div></div>
+        <div class="event-info">
+          <div class="event-title">Mountainland Youth Advisory Council</div>
+          <div class="event-meta">Virtual · All counties<br>Open to advisors</div>
+        </div>
+      </div>
+      <div class="event-card">
+        <div class="event-date"><div class="month">Jun</div><div class="day">19</div></div>
+        <div class="event-info">
+          <div class="event-title">Summit County Pathways Workshop</div>
+          <div class="event-meta">Park City · Summit County<br>Limited seats</div>
+        </div>
+      </div>
+      <div class="event-card">
+        <div class="event-date"><div class="month">Jul</div><div class="day">1</div></div>
+        <div class="event-info">
+          <div class="event-title">USHE First Credential Initiative Info Session</div>
+          <div class="event-meta">Virtual · All counties<br>RSVP required</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">The Bridge</div>
+        <div class="footer-tagline">Mountainland Region<br>Counselors and Advisors Hub</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Quick links</div>
+        <div class="footer-links">
+          <span class="footer-link">About</span>
+          <span class="footer-link">Pathways</span>
+          <span class="footer-link">Resources</span>
+          <span class="footer-link">Events</span>
+          <span class="footer-link">Professional Development</span>
+          <span class="footer-link">Connect</span>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <div class="footer-links">
+          <span class="footer-link">Contact us</span>
+          <span class="footer-link">Submit feedback</span>
+          <span class="footer-link">Report a broken link</span>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Partners</div>
+        <div class="footer-links">
+          <span class="footer-link">UVU Workforce Alignment</span>
+          <span class="footer-link">USHE</span>
+          <span class="footer-link">K-16 Alliance</span>
+          <span class="footer-link">Mountainland Youth Advisory Council</span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2026 The Bridge. Mountainland Region Counselors and Advisors Hub.</span>
+    </div>
+  </div>
+
+  <script>
+  function selectCounty(county) {
+    document.querySelectorAll('.county-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    const nc = document.getElementById('nav-county');
+    nc.textContent = county;
+    nc.style.display = 'inline-block';
+    document.getElementById('card-county-1').textContent = county;
+    document.getElementById('card-county-2').textContent = county;
+    document.getElementById('pathways-title').textContent = 'Pathways — ' + county;
+  }
+  </script>
+</body>
+</html>
+
+
+
