@@ -15,5 +15,12 @@ requests revision, or rejects. Revision requests carry a note back to the submit
 </head>
 <body>
     Dashboard test
+    <% if (user.role === 'admin') { %>
+        Only admin can see this
+    <% } %>
+
+    <% if (user.role === 'counselor') { %>
+        Only counselor can see this
+    <% } %>
 </body>
 </html>

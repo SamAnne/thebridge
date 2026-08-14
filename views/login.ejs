@@ -197,19 +197,21 @@ nav{background:var(--g);display:flex;align-items:center;padding:0 32px;height:56
   <div class="login-card">
     <div class="login-logo">The Bridge</div>
     <p class="login-sub">Mountainland Region Counselors and Advisors Hub</p>
-    <div class="form-group">
-      <label class="login-label">Email address</label>
-      <input class="login-input" type="email" placeholder="you@district.edu">
-    </div>
-    <div class="form-group">
-      <label class="login-label">Password</label>
-      <input class="login-input" type="password" placeholder="••••••••">
-    </div>
-    <p style="font-size:11px;color:var(--tl);margin-bottom:20px;">Your access level is determined by your account settings. Counselors and admins see different views after logging in.</p>
-    <div style="display:flex;gap:10px;">
-      <button class="login-btn" onclick="loginAs('counselor')" style="background:var(--g);">Log in as Counselor</button>
-      <button class="login-btn" onclick="loginAs('admin')" style="background:var(--bronze);">Log in as Admin</button>
-    </div>
+    <form action="/login" method="POST">
+      <div class="form-group">
+        <label class="login-label">Email address</label>
+        <input class="login-input" type="email" placeholder="you@district.edu" name="email" required>
+      </div>
+      <div class="form-group">
+        <label class="login-label">Password</label>
+        <input class="login-input" type="password" placeholder="••••••••" name="password" required>
+      </div>
+      <p style="font-size:11px;color:var(--tl);margin-bottom:20px;">Your access level is determined by your account settings. Counselors and admins see different views after logging in.</p>
+      <div style="display:flex;gap:10px;">
+        <button class="login-btn" type="submit" style="background:var(--g);">Log in</button>
+        <!-- <button class="login-btn" onclick="loginAs('admin')" style="background:var(--bronze);">Log in as Admin</button> -->
+      </div>
+    </form>
     <p class="login-note">Access is managed by your regional pathways administrator.<br>Contact StefanieA@uvu.edu for access requests.</p>
   </div>
 </div>
