@@ -5,7 +5,8 @@ import Role from '../models/role';
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
     const token = req.cookies.token;
     if (!token) {
-        return res.redirect(`/login`);
+        console.log('cant find user');
+        return res.json({ error: 'Could not authorize user.'});
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
@@ -14,7 +15,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
         next();
     } catch (error) {
         res.clearCookie('token');
-        return res.redirect(`/login`);
+        console.log('server error');
+        return res.json({ error: 'Server Error.'});
     }
 }
 
