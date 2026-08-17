@@ -1,22 +1,23 @@
 // import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom'
 import Home from './pages/Home'
-import Dashboard from './pages/Dashboard'
+import Dashboard, { loader as dashboardLoader } from './pages/Dashboard'
 import Login from './pages/Login'
 import './App.css'
 
-function App() {
-  //const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <Routes>
+const router = createBrowserRouter(
+  createRoutesFromElements(
+      <>
         <Route path="/" element={<Home />} />
         <Route path='/Login' element={<Login />} />
-        <Route path="/Dashboard" element={<Dashboard/>} />
-      </Routes>
-    </>
+        <Route path="/Dashboard" element={<Dashboard/>} loader={dashboardLoader}/>
+      </>
   )
+);
+
+
+function App() {
+  return <RouterProvider router={router} />;
 }
 
 export default App

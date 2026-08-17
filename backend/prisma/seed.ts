@@ -10,7 +10,7 @@ async function main() {
     }
 
     const adminPassword = await bcrypt.hash('adminpassword123', 10);
-    const studentPassword = await bcrypt.hash('studentpassword123', 10);
+    const counselorPassword = await bcrypt.hash('studentpassword123', 10);
 
     await prisma.user.upsert({
         where: { email: 'admin@example.com' },
@@ -23,16 +23,14 @@ async function main() {
     });
 
     await prisma.user.upsert({
-        where: { email: 'student@example.com' },
+        where: { email: 'counselor@example.com' },
         update: {},
         create: {
-            email: 'student@example.com',
-            password: studentPassword,
+            email: 'counselor@example.com',
+            password: counselorPassword,
             roleId: counselorRole.id
         }
     });
-
-    console.log('Seeding complete');
 }
 
 main()

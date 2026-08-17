@@ -20,6 +20,7 @@ model User {
   password  String
   roleId    Int
   role      Role @relation(fields: [roleId], references: [id])
+  resourses Resource[]
 }
 
 model Role {
@@ -27,3 +28,17 @@ model Role {
   role      String @unique
   users     User[]
 }
+
+model Resource {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  user      User @relation(fields: [userId], references: [id])
+  date      DateTime @default(now())
+  status    String  // rejected, approved, revision, unseen
+  resource  String
+  // county?/district
+  note      String
+}
+
+
+

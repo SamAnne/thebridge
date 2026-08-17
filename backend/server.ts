@@ -42,28 +42,55 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-
+// authorize current user
 router.get('/api/me', requireAuth, (req: Request, res: Response) => {
     console.log('sending credentials');
     res.json({ id: (req as any).user.id, email: (req as any).user.email, role: (req as any).user.role });
 });
 
-// router.get('/api/users/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
-//     const user = await prisma.user.findUnique({
-//         where: { id: Number(req.params.id) },
-//         select: { id: true, email: true, role: { select: { role: true } } }
-//     });
-//     res.json(user);
-// });
+// add a resource
+router.post('/api/resources', requireAuth, requireRole(Role.Admin, Role.Counselor), async (req: Request, res: Response) => {
+    console.log('adding resource');
+    const { resource, userId } = req.body;
+    await prisma.resource.create({
+        data: { user: { connect: { id: Number(userId) }}, status: 'unseen', resource: String(resource), note: '' }
+    });
+});
 
-// app.get('/', (req: Request, res: Response) => {
-//   res.render('home', {title: 'Home'});
-// });
+// get all resources from one user
+router.get('/api/resources/user/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    console.log('getting all resource from user');
+    const resources = await prisma.resource.findMany({
+        where: { userId: Number(req.params.id) },
+        select: { resource: true, status: true, note: true, date: true }
+    });
+    res.json(resources);
+});
+
+// set status of resource
+router.post('/api/resources/status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    console.log("updating status of resource");
+    const { id, status, note } = req.body;
+    await prisma.resource.update({
+        where: { id: Number(id) },
+        data: { status: String(status), note: String(note) }
+    });
+});
+
+// get all resources with a certain status
+// by a certain order? oldest to new
+// or handle in frontend
+router.get('/api/resources/:status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    console.log('getting all resources with a certain status');
+    const resources = await prisma.resource.findMany({
+        where: { status: String(req.params.status) },
+        select: { id: true, user: { select: { id: true, email: true } }, resource: true, status: true, note: true, date: true }
+    });
+    res.json(resources);
+});
 
 
-// app.get('/dashboard', (req: Request, res: Response, next: NextFunction) => {
-//   res.render('dashboard', { title: 'Dashboard' });
-// });
+
 app.use(router);
 app.use('/login', loginRouter);
 
