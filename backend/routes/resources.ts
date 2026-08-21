@@ -47,7 +47,7 @@ router.post('/', requireAuth, requireRole(Role.Admin, Role.Counselor), upload.ar
             include: { files: true }
         });
 
-        // res.json(resourceWithFiles);
+        res.json(resourceWithFiles);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Server error' });
@@ -68,10 +68,11 @@ router.get('/user/:id', requireAuth, requireRole(Role.Admin), async (req: Reques
 router.post('/status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
     console.log("updating status of resource");
     const { id, status, note } = req.body;
-    await prisma.resource.update({
+    const resource = await prisma.resource.update({
         where: { id: Number(id) },
         data: { status: String(status), note: String(note) }
     });
+    res.json(resource);
 });
 
 // get all resources with a certain status
