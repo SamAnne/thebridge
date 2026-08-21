@@ -4,6 +4,7 @@ import './AdminUsers.css';
 
 interface RegisteredUser {
     id: number;
+    name: string | null;
     email: string;
     district: string | null;
     county: string | null;
@@ -47,6 +48,7 @@ function AdminUsers() {
                 <table className="admin-users__table">
                     <thead>
                         <tr>
+                            <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
                             <th>District</th>
@@ -57,6 +59,7 @@ function AdminUsers() {
                     <tbody>
                         {users.map(user => (
                             <tr key={user.id}>
+                                <td className={user.name ? '' : 'admin-users__muted'}>{user.name ?? '—'}</td>
                                 <td>{user.email}</td>
                                 <td>
                                     <span className={`role-pill role-pill--${user.role.role}`}>

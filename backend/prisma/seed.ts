@@ -18,7 +18,8 @@ async function main() {
         create: {
             email: 'admin@example.com',
             password: adminPassword,
-            roleId: adminRole.id
+            roleId: adminRole.id,
+            name: 'Admin User'
         }
     });
 
@@ -28,7 +29,8 @@ async function main() {
         create: {
             email: 'counselor@example.com',
             password: counselorPassword,
-            roleId: counselorRole.id
+            roleId: counselorRole.id,
+            name: 'Jordan Casey'
         }
     });
 }

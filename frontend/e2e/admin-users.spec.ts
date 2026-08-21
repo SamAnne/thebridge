@@ -32,8 +32,8 @@ test('admin sees the registered users table', async ({ page }) => {
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify([
-                { id: 1, email: 'admin@example.com', district: null, county: null, createdAt: '2026-08-21T17:00:10.961Z', role: { role: 'admin' } },
-                { id: 2, email: 'counselor@example.com', district: 'North District', county: 'Fairfax', createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'counselor' } },
+                { id: 1, name: 'Admin User', email: 'admin@example.com', district: null, county: null, createdAt: '2026-08-21T17:00:10.961Z', role: { role: 'admin' } },
+                { id: 2, name: 'Jordan Casey', email: 'counselor@example.com', district: 'North District', county: 'Fairfax', createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'counselor' } },
             ]),
         })
     );
@@ -41,6 +41,8 @@ test('admin sees the registered users table', async ({ page }) => {
     await page.goto('/Admin/Users');
 
     await expect(page).toHaveURL(/\/Admin\/Users$/);
+    await expect(page.getByRole('cell', { name: 'Admin User' })).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Jordan Casey' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'admin@example.com' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'counselor@example.com' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'North District' })).toBeVisible();

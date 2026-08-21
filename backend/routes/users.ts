@@ -9,6 +9,7 @@ router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: 
     const users = await prisma.user.findMany({
         select: {
             id: true,
+            name: true,
             email: true,
             district: true,
             county: true,
