@@ -31,6 +31,33 @@
     text-transform: capitalize;
 }
 
+.admin-users__edit-input {
+    width: 100%;
+    max-width: 160px;
+    padding: 6px 8px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.admin-users__edit-input:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}
+
+.admin-users__actions {
+    display: flex;
+    gap: 6px;
+}
+
+.admin-users__edit-error {
+    margin-top: 6px;
+    max-width: 200px;
+}
+
 .admin-users__empty {
     padding: 32px 20px;
     text-align: center;

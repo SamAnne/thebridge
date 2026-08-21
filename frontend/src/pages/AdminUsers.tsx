@@ -22,11 +22,57 @@ export async function loader() {
     return users as RegisteredUser[];
 }
 
+interface EditForm {
+    name: string;
+    district: string;
+    county: string;
+}
+
 function AdminUsers() {
-    const users = useLoaderData() as RegisteredUser[];
+    const loaderUsers = useLoaderData() as RegisteredUser[];
+    const [users, setUsers] = useState(loaderUsers);
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editForm, setEditForm] = useState<EditForm>({ name: '', district: '', county: '' });
+    const [saveError, setSaveError] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    function startEdit(user: RegisteredUser) {
+        setEditingId(user.id);
+        setEditForm({ name: user.name ?? '', district: user.district ?? '', county: user.county ?? '' });
+        setSaveError('');
+    }
+
+    function cancelEdit() {
+        setEditingId(null);
+        setSaveError('');
+    }
+
+    async function saveEdit(id: number) {
+        setSaving(true);
+        setSaveError('');
+        try {
+            const response = await fetch(`http://localhost:5000/api/users/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(editForm),
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                setSaveError(data.error || 'Could not save changes.');
+                return;
+            }
+            setUsers(prev => prev.map(u => (u.id === id ? data : u)));
+            setEditingId(null);
+        } catch {
+            setSaveError('Could not save changes.');
+        } finally {
+            setSaving(false);
+        }
+    }
 
     const roles = useMemo(
         () => Array.from(new Set(users.map(u => u.role.role))).sort(),
@@ -103,23 +149,75 @@ function AdminUsers() {
                             <th>District</th>
                             <th>County</th>
                             <th>Join Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredUsers.map(user => (
+                        {filteredUsers.map(user => {
+                            const isEditing = editingId === user.id;
+                            return (
                             <tr key={user.id}>
-                                <td className={user.name ? '' : 'admin-users__muted'}>{user.name ?? '—'}</td>
-                                <td>{user.email}</td>
-                                <td>
-                                    <span className={`role-pill role-pill--${user.role.role}`}>
-                                        {user.role.role}
-                                    </span>
-                                </td>
-                                <td className={user.district ? '' : 'admin-users__muted'}>{user.district ?? '—'}</td>
-                                <td className={user.county ? '' : 'admin-users__muted'}>{user.county ?? '—'}</td>
-                                <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                {isEditing ? (
+                                    <>
+                                        <td>
+                                            <input
+                                                className="admin-users__edit-input"
+                                                value={editForm.name}
+                                                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                                                aria-label="Name"
+                                            />
+                                        </td>
+                                        <td>{user.email}</td>
+                                        <td>
+                                            <span className={`role-pill role-pill--${user.role.role}`}>
+                                                {user.role.role}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <input
+                                                className="admin-users__edit-input"
+                                                value={editForm.district}
+                                                onChange={e => setEditForm(f => ({ ...f, district: e.target.value }))}
+                                                aria-label="District"
+                                            />
+                                        </td>
+                                        <td>
+                                            <input
+                                                className="admin-users__edit-input"
+                                                value={editForm.county}
+                                                onChange={e => setEditForm(f => ({ ...f, county: e.target.value }))}
+                                                aria-label="County"
+                                            />
+                                        </td>
+                                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                        <td>
+                                            <div className="admin-users__actions">
+                                                <button className="btn btn--primary btn--small" disabled={saving} onClick={() => saveEdit(user.id)}>Save</button>
+                                                <button className="btn btn--outline btn--small" disabled={saving} onClick={cancelEdit}>Cancel</button>
+                                            </div>
+                                            {saveError && <p className="alert-error admin-users__edit-error">{saveError}</p>}
+                                        </td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td className={user.name ? '' : 'admin-users__muted'}>{user.name ?? '—'}</td>
+                                        <td>{user.email}</td>
+                                        <td>
+                                            <span className={`role-pill role-pill--${user.role.role}`}>
+                                                {user.role.role}
+                                            </span>
+                                        </td>
+                                        <td className={user.district ? '' : 'admin-users__muted'}>{user.district ?? '—'}</td>
+                                        <td className={user.county ? '' : 'admin-users__muted'}>{user.county ?? '—'}</td>
+                                        <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                        <td>
+                                            <button className="btn btn--outline btn--small" onClick={() => startEdit(user)}>Edit</button>
+                                        </td>
+                                    </>
+                                )}
                             </tr>
-                        ))}
+                            );
+                        })}
                     </tbody>
                 </table>
                 )}
