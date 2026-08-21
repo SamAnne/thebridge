@@ -29,7 +29,11 @@ router.post('/', async function(req: Request, res: Response, next: NextFunction)
     );
 
     // store token in a cookie
-    res.cookie('token', token, { httpOnly: true });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
     res.json({ success: true });
   }
   catch (error: any) {
