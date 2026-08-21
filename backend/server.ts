@@ -1,10 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
-import { requireAuth, requireRole } from './routes/roles';
-import Role from './models/role';
+import { requireAuth } from './routes/roles';
 import loginRouter from './routes/login';
-import { prisma } from './db/connection';
+import resourcesRouter from './routes/resources';
 import cors from 'cors';
 
 const express = require('express');
@@ -48,51 +47,10 @@ router.get('/api/me', requireAuth, (req: Request, res: Response) => {
     res.json({ id: (req as any).user.id, email: (req as any).user.email, role: (req as any).user.role });
 });
 
-// add a resource
-router.post('/api/resources', requireAuth, requireRole(Role.Admin, Role.Counselor), async (req: Request, res: Response) => {
-    console.log('adding resource');
-    const { resource, userId } = req.body;
-    await prisma.resource.create({
-        data: { user: { connect: { id: Number(userId) }}, status: 'unseen', resource: String(resource), note: '' }
-    });
-});
-
-// get all resources from one user
-router.get('/api/resources/user/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
-    console.log('getting all resource from user');
-    const resources = await prisma.resource.findMany({
-        where: { userId: Number(req.params.id) },
-        select: { resource: true, status: true, note: true, date: true }
-    });
-    res.json(resources);
-});
-
-// set status of resource
-router.post('/api/resources/status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
-    console.log("updating status of resource");
-    const { id, status, note } = req.body;
-    await prisma.resource.update({
-        where: { id: Number(id) },
-        data: { status: String(status), note: String(note) }
-    });
-});
-
-// get all resources with a certain status
-// by a certain order? oldest to new
-// or handle in frontend
-router.get('/api/resources/:status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
-    console.log('getting all resources with a certain status');
-    const resources = await prisma.resource.findMany({
-        where: { status: String(req.params.status) },
-        select: { id: true, user: { select: { id: true, email: true } }, resource: true, status: true, note: true, date: true }
-    });
-    res.json(resources);
-});
-
-
 
 app.use(router);
 app.use('/login', loginRouter);
+app.use('/api/resources', resourcesRouter)
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
