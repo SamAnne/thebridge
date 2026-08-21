@@ -23,6 +23,9 @@ model User {
   roleId    Int
   role      Role @relation(fields: [roleId], references: [id])
   resourses Resource[]
+  district  String?
+  county    String?
+  createdAt DateTime @default(now())
 }
 
 model Role {
