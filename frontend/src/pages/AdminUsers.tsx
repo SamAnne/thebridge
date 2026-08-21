@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { useLoaderData, Link, useNavigate } from 'react-router-dom';
 import { requireRole, logout } from '../lib/auth';
 import './AdminUsers.css';
@@ -24,6 +25,23 @@ export async function loader() {
 function AdminUsers() {
     const users = useLoaderData() as RegisteredUser[];
     const navigate = useNavigate();
+    const [search, setSearch] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+
+    const roles = useMemo(
+        () => Array.from(new Set(users.map(u => u.role.role))).sort(),
+        [users]
+    );
+
+    const filteredUsers = useMemo(() => {
+        const q = search.trim().toLowerCase();
+        return users.filter(user => {
+            if (roleFilter !== 'all' && user.role.role !== roleFilter) return false;
+            if (!q) return true;
+            return [user.name, user.email, user.district, user.county]
+                .some(field => field?.toLowerCase().includes(q));
+        });
+    }, [users, search, roleFilter]);
 
     async function handleLogout() {
         await logout();
@@ -36,7 +54,11 @@ function AdminUsers() {
                 <div>
                     <p className="page__eyebrow">Admin</p>
                     <h1 className="page__title">Registered Users</h1>
-                    <p className="page__subtitle">{users.length} account{users.length === 1 ? '' : 's'}</p>
+                    <p className="page__subtitle">
+                        {filteredUsers.length === users.length
+                            ? `${users.length} account${users.length === 1 ? '' : 's'}`
+                            : `${filteredUsers.length} of ${users.length} accounts`}
+                    </p>
                 </div>
                 <div className="page__header-actions">
                     <Link className="btn btn--outline btn--small" to="/Dashboard">Back to Dashboard</Link>
@@ -44,7 +66,34 @@ function AdminUsers() {
                 </div>
             </div>
 
+            <div className="admin-users__filters">
+                <input
+                    type="text"
+                    className="admin-users__search"
+                    placeholder="Search by name, email, district, or county..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    aria-label="Search users"
+                />
+                <select
+                    className="admin-users__role-filter"
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
+                    aria-label="Filter by role"
+                >
+                    <option value="all">All roles</option>
+                    {roles.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                    ))}
+                </select>
+            </div>
+
             <div className="card admin-users__card">
+                {filteredUsers.length === 0 ? (
+                    <p className="admin-users__empty">
+                        {users.length === 0 ? 'No registered users yet.' : 'No users match your search.'}
+                    </p>
+                ) : (
                 <table className="admin-users__table">
                     <thead>
                         <tr>
@@ -57,7 +106,7 @@ function AdminUsers() {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
+                        {filteredUsers.map(user => (
                             <tr key={user.id}>
                                 <td className={user.name ? '' : 'admin-users__muted'}>{user.name ?? '—'}</td>
                                 <td>{user.email}</td>
@@ -73,6 +122,7 @@ function AdminUsers() {
                         ))}
                     </tbody>
                 </table>
+                )}
             </div>
         </div>
     );

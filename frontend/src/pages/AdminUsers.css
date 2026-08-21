@@ -1,3 +1,42 @@
+.admin-users__filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-users__search {
+    flex: 1;
+    min-width: 240px;
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.admin-users__search:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}
+
+.admin-users__role-filter {
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+    text-transform: capitalize;
+}
+
+.admin-users__empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--uvu-silver);
+}
+
 .admin-users__card {
     overflow-x: auto;
     padding: 0;
