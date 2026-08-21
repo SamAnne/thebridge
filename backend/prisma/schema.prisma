@@ -13,7 +13,9 @@ datasource db {
   provider = "postgresql"
 }
 
-
+// add district
+// get all of them and make another table
+// add district of user based on their email domain
 model User {
   id        Int @id @default(autoincrement())
   email     String @unique
@@ -35,9 +37,18 @@ model Resource {
   user      User @relation(fields: [userId], references: [id])
   date      DateTime @default(now())
   status    String  // rejected, approved, revision, unseen
-  resource  String
+  description  String
+  files     File[]
   // county?/district
   note      String
+}
+
+model File {
+  id         Int      @id @default(autoincrement())
+  url        String
+  fileName   String
+  resourceId Int
+  resource   Resource @relation(fields: [resourceId], references: [id])
 }
 
 
