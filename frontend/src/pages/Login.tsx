@@ -24,6 +24,7 @@ function Login() {
             if (!res.ok || data.error) {
                 if (data.error) setError(data.error);
                 else setError('The password or email are incorrect.');
+                return;
             }
             navigate('/Dashboard');
         } catch (err) {
