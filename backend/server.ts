@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import cookieParser from 'cookie-parser';
 import { requireAuth } from './routes/roles';
 import loginRouter from './routes/login';
+import logoutRouter from './routes/logout';
 import resourcesRouter from './routes/resources';
 import usersRouter from './routes/users';
 import cors from 'cors';
@@ -51,6 +52,7 @@ router.get('/api/me', requireAuth, (req: Request, res: Response) => {
 
 app.use(router);
 app.use('/login', loginRouter);
+app.use('/logout', logoutRouter);
 app.use('/api/resources', resourcesRouter)
 app.use('/api/users', usersRouter)
 
