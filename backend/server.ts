@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { requireAuth } from './routes/roles';
 import loginRouter from './routes/login';
 import resourcesRouter from './routes/resources';
+import usersRouter from './routes/users';
 import cors from 'cors';
 
 const express = require('express');
@@ -51,6 +52,7 @@ router.get('/api/me', requireAuth, (req: Request, res: Response) => {
 app.use(router);
 app.use('/login', loginRouter);
 app.use('/api/resources', resourcesRouter)
+app.use('/api/users', usersRouter)
 
 if (require.main === module) {
     const PORT = process.env.PORT || 5000;
