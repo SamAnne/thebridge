@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
-import { useLoaderData } from 'react-router-dom';
-import { requireRole } from '../lib/auth';
+import { useLoaderData, Link, useNavigate } from 'react-router-dom';
+import { requireRole, logout } from '../lib/auth';
+import './Dashboard.css';
 
 export async function loader(){
     const user = await requireRole('admin', 'counselor');
@@ -50,9 +51,9 @@ function FileRowItem({ name, url }: { name: string, url: string }) {
 
   return (
     <div style={{ marginBottom: '1rem' }}>
-      <a onClick={() => setIsOpen(!isOpen)} style={{ color: 'blue', cursor: 'pointer' }}>
+      <button type="button" className="file-preview-link" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? 'Hide' : '▶ Preview'} {name}
-      </a>
+      </button>
       {isOpen && <DocumentPreview name={name} url={url} />}
     </div>
   );
@@ -93,7 +94,12 @@ function Dashboard() {
     const noteVal = useRef<HTMLInputElement>(null);
     const fileVal = useRef<HTMLInputElement>(null);
     const [error, setError] = useState('');
-    
+    const navigate = useNavigate();
+
+    async function handleLogout() {
+        await logout();
+        navigate('/Login');
+    }
 
     async function postStatus(status: string, id: number) {
         try {
@@ -155,61 +161,83 @@ function Dashboard() {
     
     
     return (
-    <>
+    <div className="page">
         {/* when signing up, check email for the domain and add appropriate role depending on if the domain is one of the districts, otherwise public role selected (student/parent) */}
         {user && (
-            <h3>Hello, {user.email} ({user.role})</h3>
+            <div className="page__header">
+                <div>
+                    <p className="page__eyebrow">The Bridge</p>
+                    <h1 className="page__title">Dashboard</h1>
+                    <p className="dashboard__greeting">
+                        {user.email} <span className={`role-pill role-pill--${user.role}`}>{user.role}</span>
+                    </p>
+                </div>
+                <div className="page__header-actions">
+                    {user.role === 'admin' && (
+                        <Link className="btn btn--outline btn--small" to="/Admin/Users">Registered Users</Link>
+                    )}
+                    <button className="btn btn--outline btn--small" onClick={handleLogout}>Logout</button>
+                </div>
+            </div>
         )}
         {user && user.role === 'admin' && (
             // add files
-            // add links
             // order resources by oldest to newest (add options for otherwise?)
             //adding resources
             //review q
             <div>
-                <h4>Review Queue</h4>
-                <ul>
-                    {unseenResources?.length === 0 && <p>No resources in review queue currently.</p>}
-                    {unseenResources && unseenResources.map((resource, index) => 
+                <div className="dashboard__section-header">
+                    <h4>Review Queue</h4>
+                </div>
+                {unseenResources?.length === 0 && <p>No resources in review queue currently.</p>}
+                <div className="resource-grid">
+                    {unseenResources && unseenResources.map((resource, index) =>
                     (
-                        <li key={resource.id}>
+                        <div className="card resource-card" key={resource.id}>
                             <h4>Resource {index}</h4>
                             <p>{resource.description}</p>
                             <div>{resource.files.map((file, index) => (
                                 <FileRowItem key={index} name={file.fileName} url={file.url} />
-                            )                            
+                            )
                             )}
                             </div>
-                            <span>{new Date(resource.date).toLocaleString()}</span><br/>
-                            <input type="text" ref={noteVal} placeholder="Notes ..."></input><br/>
-                            <button onClick={() => postStatus('approved', resource.id)}>Approve</button>
-                            <button onClick={() => postStatus('rejected', resource.id)}>Reject</button>
-                            <button onClick={() => postStatus('revision', resource.id)}>Revision Needed</button>
-                        </li>
+                            <span className="resource-card__date">{new Date(resource.date).toLocaleString()}</span>
+                            <div className="resource-card__note">
+                                <input type="text" ref={noteVal} placeholder="Notes ..."></input>
+                            </div>
+                            <div className="resource-card__actions">
+                                <button className="btn btn--primary btn--small" onClick={() => postStatus('approved', resource.id)}>Approve</button>
+                                <button className="btn btn--outline btn--small" onClick={() => postStatus('rejected', resource.id)}>Reject</button>
+                                <button className="btn btn--outline btn--small" onClick={() => postStatus('revision', resource.id)}>Revision Needed</button>
+                            </div>
+                        </div>
                     )
                     )}
-                </ul>
+                </div>
             </div>
-            
+
         )}
 
         {user && user.role === 'counselor' && (
             //submitting resources
-            <div>
+            <div className="card">
                 <h5>Submit a Resource</h5>
                 <form onSubmit={postResource}>
-                    <input
-                        type='text'
-                        ref={descriptionVal}
-                        placeholder="Description goes here"
-                        required
-                    >
-                    </input>
-                    <div>
-                        <label>
-                            Select file/s:
-                        </label><br/>
+                    <div className="field">
+                        <label htmlFor="description">Description</label>
                         <input
+                            id="description"
+                            type='text'
+                            ref={descriptionVal}
+                            placeholder="Description goes here"
+                            required
+                        >
+                        </input>
+                    </div>
+                    <div className="field">
+                        <label htmlFor="files">Select file/s</label>
+                        <input
+                            id="files"
                             type="file"
                             accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             multiple
@@ -217,14 +245,14 @@ function Dashboard() {
                         >
                         </input>
                     </div>
-                    {error.length > 0 && (<p>{error}</p>)}
-                    <button type='submit'>Submit Resource</button>
+                    {error.length > 0 && (<p className="alert-error">{error}</p>)}
+                    <button className="btn btn--primary" type='submit'>Submit Resource</button>
                 </form>
             </div>
             // add all of user resources? with notes and status
         )}
-        
-    </>
+
+    </div>
     )
 }
 

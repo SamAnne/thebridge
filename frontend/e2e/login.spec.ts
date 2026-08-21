@@ -33,3 +33,18 @@ test('successful login navigates to /Dashboard', async ({ page }) => {
 
     await expect(page).toHaveURL(/\/Dashboard$/);
 });
+
+test('show/hide password toggle reveals and re-hides the password', async ({ page }) => {
+    await page.goto('/Login');
+    const passwordInput = page.locator('#password');
+
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await page.fill('#password', 'mysecret');
+    await page.getByRole('button', { name: 'Show' }).click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+    await expect(passwordInput).toHaveValue('mysecret');
+
+    await page.getByRole('button', { name: 'Hide' }).click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+});

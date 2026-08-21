@@ -38,6 +38,24 @@ test('admin role reaches the Dashboard and sees the review queue', async ({ page
     await expect(page.getByRole('heading', { name: 'Review Queue' })).toBeVisible();
 });
 
+test('admin can navigate to the Registered Users page from the Dashboard link', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/resources/unseen', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+
+    await page.goto('/Dashboard');
+    await page.getByRole('link', { name: 'Registered Users' }).click();
+
+    await expect(page).toHaveURL(/\/Admin\/Users$/);
+    await expect(page.getByRole('heading', { name: 'Registered Users' })).toBeVisible();
+});
+
 test('counselor role reaches the Dashboard and sees the submit form', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 2, email: 'counselor@example.com', role: 'counselor' }) })

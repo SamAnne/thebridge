@@ -1,0 +1,199 @@
+.page {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 40px 32px 64px;
+    text-align: left;
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+.page--narrow {
+    max-width: 420px;
+}
+
+.page--centered {
+    text-align: center;
+}
+
+.page__eyebrow {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--uvu-green);
+}
+
+.page__title {
+    margin: 0 0 4px;
+    font-family: var(--heading-font);
+    font-weight: 600;
+    font-size: 32px;
+    color: #1a1a1a;
+}
+
+.page__subtitle {
+    margin: 0 0 28px;
+    font-size: 15px;
+    color: var(--uvu-silver);
+}
+
+.page__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.page__header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(39, 93, 56, 0.06);
+    padding: 28px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--heading-font);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn--primary {
+    background: var(--uvu-green);
+    color: #fff;
+}
+
+.btn--primary:hover {
+    background: var(--uvu-green-dark);
+}
+
+.btn--outline {
+    background: #fff;
+    color: #333;
+    border-color: var(--uvu-grey);
+}
+
+.btn--outline:hover {
+    border-color: var(--uvu-silver);
+    background: var(--uvu-grey-light);
+}
+
+.btn--small {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    text-align: left;
+}
+
+.field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+}
+
+.field input[type="email"],
+.field input[type="password"],
+.field input[type="text"],
+.field input[type="file"] {
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.field input[type="email"]:focus,
+.field input[type="password"]:focus,
+.field input[type="text"]:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}
+
+.password-input {
+    position: relative;
+    display: flex;
+}
+
+.password-input input {
+    flex: 1;
+    padding-right: 56px !important;
+}
+
+.password-input__toggle {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 6px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--uvu-green);
+    cursor: pointer;
+}
+
+.password-input__toggle:hover {
+    text-decoration: underline;
+}
+
+.alert-error {
+    background: var(--uvu-error-bg);
+    color: var(--uvu-error);
+    border: 1px solid rgba(179, 38, 30, 0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+.role-pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: capitalize;
+}
+
+.role-pill--admin {
+    background: rgba(39, 93, 56, 0.12);
+    color: var(--uvu-green-dark);
+}
+
+.role-pill--counselor {
+    background: rgba(142, 140, 137, 0.16);
+    color: #55534f;
+}
+
+.role-pill--student {
+    background: #f0f0f0;
+    color: #555;
+}
