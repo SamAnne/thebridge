@@ -1,29 +1,17 @@
 import { useState, useRef, useEffect } from "react"
 import { useLoaderData } from 'react-router-dom';
+import { requireRole } from '../lib/auth';
 
 export async function loader(){
-    let user;
-    let resources;
-    try {
-        const response = await fetch('http://localhost:5000/api/me', {
+    const user = await requireRole('admin', 'counselor');
+    if (user.role === 'admin'){
+        const response = await fetch('http://localhost:5000/api/resources/unseen', {
             credentials: 'include'
         });
-        const data = await response.json();
-        if (data.error) return; // handle better
-        user = data;
-        if (user && user.role === 'admin'){
-            const response = await fetch('http://localhost:5000/api/resources/unseen', {
-                credentials: 'include'
-            });
-            resources = await response.json();
-            return [user,resources];
-        }
-        return [user, null];
+        const resources = await response.json();
+        return [user, resources];
     }
-    catch(err){
-        // ??
-        // redirect ?
-    }
+    return [user, null];
 };
 
 
