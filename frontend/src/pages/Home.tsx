@@ -1,15 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-//placeholder
+
 function Home() {
     const navigate = useNavigate();
 
     return (
-    <>
-        <h3>Home</h3>
-        <button onClick={()=> navigate('/Login')}>Login</button>
-    
-    
-    </>
+        <div className="page page--narrow page--centered">
+            <p className="page__eyebrow">The Bridge</p>
+            <h1 className="page__title">Home</h1>
+            <p className="page__subtitle">Sign in to submit or review resources.</p>
+            <button className="btn btn--primary" onClick={() => navigate('/Login')}>Login</button>
+        </div>
     )
 }
 
