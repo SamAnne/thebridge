@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import app from '../server';
 
@@ -49,4 +50,24 @@ test('PATCH /api/users/:id updates name/district/county for admins only, ignores
 
     // restore for other tests/manual use
     await adminAgent.patch(`/api/users/${counselorId}`).send({ county: 'Fairfax' });
+});
+
+test('a validly-signed token for a user that no longer exists gets its cookie cleared', async () => {
+    const ghostToken = jwt.sign(
+        { id: 999999, email: 'ghost@example.com', role: 'admin' },
+        process.env.JWT_SECRET as string,
+        { expiresIn: '1d' }
+    );
+
+    const meRes = await request(app).get('/api/me').set('Cookie', `token=${ghostToken}`);
+    assert.equal(meRes.body.error, 'Could not authorize user.');
+    const meCookie = meRes.headers['set-cookie']?.[0];
+    assert.ok(meCookie, 'expected a Set-Cookie header clearing the token');
+    assert.match(meCookie, /token=;/);
+    assert.match(meCookie, /Expires=Thu, 01 Jan 1970/);
+
+    const usersRes = await request(app).get('/api/users').set('Cookie', `token=${ghostToken}`);
+    const usersCookie = usersRes.headers['set-cookie']?.[0];
+    assert.ok(usersCookie, 'expected a Set-Cookie header clearing the token on the role-gated route too');
+    assert.match(usersCookie, /token=;/);
 });

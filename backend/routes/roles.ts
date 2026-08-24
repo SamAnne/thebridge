@@ -25,6 +25,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     authenticate(req)
         .then(user => {
             if (!user) {
+                res.clearCookie('token');
                 console.log('cant find user');
                 return res.json({ error: 'Could not authorize user.' });
             }
@@ -43,6 +44,7 @@ export function requireRole(...allowedRoles: Role[]) {
         authenticate(req)
             .then(user => {
                 if (!user) {
+                    res.clearCookie('token');
                     console.log('cant find user role');
                     return res.json({ error: 'Could not authorize role of user.' });
                 }
