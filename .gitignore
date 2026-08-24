@@ -2,4 +2,5 @@ backend/dist
 backend/node_modules
 backend/.env
 backend/generated/prisma
+backend/supabase
 frontend/.env

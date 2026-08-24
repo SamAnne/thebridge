@@ -3,9 +3,20 @@ import express, { Request, Response, NextFunction } from 'express';
 const router = express.Router();
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../db/connection';
 
-router.post('/', async function(req: Request, res: Response, next: NextFunction) {
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req: Request, res: Response) => {
+    res.status(429).json({ error: 'Too many login attempts. Please try again in a few minutes.' });
+  },
+});
+
+router.post('/', loginLimiter, async function(req: Request, res: Response, next: NextFunction) {
   const { email, password } = req.body;
   try {
     const user = await prisma.user.findUnique({

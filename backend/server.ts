@@ -1,5 +1,4 @@
-import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import cookieParser from 'cookie-parser';
 import { requireAuth } from './routes/roles';
 import loginRouter from './routes/login';
@@ -29,19 +28,6 @@ app.use(cookieParser());
 
 
 const router = express.Router();
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies.token;
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-            res.locals.user = decoded;
-        } catch {
-            res.locals.user = null;
-        }
-    }
-    next();
-});
 
 // authorize current user
 router.get('/api/me', requireAuth, (req: Request, res: Response) => {
