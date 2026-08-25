@@ -42,6 +42,11 @@
     box-sizing: border-box;
 }
 
+select.admin-users__edit-input {
+    max-width: none;
+    width: auto;
+}
+
 .admin-users__edit-input:focus {
     outline: none;
     border-color: var(--uvu-green);

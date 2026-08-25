@@ -116,7 +116,7 @@ test('editing a user saves via PATCH and updates the row', async ({ page }) => {
 
     await expect(page.getByRole('cell', { name: 'North District' })).toBeVisible();
     await expect(page.getByRole('cell', { name: 'Fairfax' })).toBeVisible();
-    expect(patchBody).toEqual({ name: 'Jordan Casey', district: 'North District', county: 'Fairfax' });
+    expect(patchBody).toEqual({ name: 'Jordan Casey', district: 'North District', county: 'Fairfax', role: 'counselor' });
     // back to view mode - Edit button reappears, no stray Save/Cancel left behind
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
 });
@@ -142,4 +142,71 @@ test('cancelling an edit discards changes', async ({ page }) => {
 
     await expect(page.getByRole('cell', { name: 'Should not be saved' })).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+});
+
+test('editing another user shows a role dropdown and sends the new role', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { id: 2, name: 'Jordan Casey', email: 'counselor@example.com', district: null, county: null, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'counselor' } },
+            ]),
+        })
+    );
+    let patchBody: any = null;
+    await page.route('http://localhost:5000/api/users/2', route => {
+        patchBody = route.request().postDataJSON();
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ id: 2, name: 'Jordan Casey', email: 'counselor@example.com', district: null, county: null, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'admin' } }),
+        });
+    });
+
+    await page.goto('/Admin/Users');
+    await page.getByRole('button', { name: 'Edit' }).click();
+    await page.getByLabel('Role', { exact: true }).selectOption('admin');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    expect(patchBody.role).toBe('admin');
+    await expect(page.getByRole('cell', { name: 'admin', exact: true })).toBeVisible();
+});
+
+test('editing your own row shows role as read-only and omits role from the save', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { id: 1, name: 'Admin User', email: 'admin@example.com', district: null, county: null, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'admin' } },
+            ]),
+        })
+    );
+    let patchBody: any = null;
+    await page.route('http://localhost:5000/api/users/1', route => {
+        patchBody = route.request().postDataJSON();
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ id: 1, name: 'Admin User', email: 'admin@example.com', district: 'Central', county: null, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'admin' } }),
+        });
+    });
+
+    await page.goto('/Admin/Users');
+    await page.getByRole('button', { name: 'Edit' }).click();
+
+    // no role dropdown for your own row
+    await expect(page.getByLabel('Role', { exact: true })).not.toBeVisible();
+
+    await page.getByLabel('District').fill('Central');
+    await page.getByRole('button', { name: 'Save' }).click();
+
+    expect(patchBody).not.toHaveProperty('role');
 });

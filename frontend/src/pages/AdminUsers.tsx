@@ -13,35 +13,38 @@ interface RegisteredUser {
     role: { role: string };
 }
 
+const ASSIGNABLE_ROLES = ['admin', 'counselor', 'student'];
+
 export async function loader() {
-    await requireRole('admin');
+    const currentUser = await requireRole('admin');
     const response = await fetch('http://localhost:5000/api/users', {
         credentials: 'include'
     });
     const users = await response.json();
-    return users as RegisteredUser[];
+    return { users: users as RegisteredUser[], currentUserId: currentUser.id };
 }
 
 interface EditForm {
     name: string;
     district: string;
     county: string;
+    role: string;
 }
 
 function AdminUsers() {
-    const loaderUsers = useLoaderData() as RegisteredUser[];
+    const { users: loaderUsers, currentUserId } = useLoaderData() as { users: RegisteredUser[]; currentUserId: number };
     const [users, setUsers] = useState(loaderUsers);
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [editingId, setEditingId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState<EditForm>({ name: '', district: '', county: '' });
+    const [editForm, setEditForm] = useState<EditForm>({ name: '', district: '', county: '', role: '' });
     const [saveError, setSaveError] = useState('');
     const [saving, setSaving] = useState(false);
 
     function startEdit(user: RegisteredUser) {
         setEditingId(user.id);
-        setEditForm({ name: user.name ?? '', district: user.district ?? '', county: user.county ?? '' });
+        setEditForm({ name: user.name ?? '', district: user.district ?? '', county: user.county ?? '', role: user.role.role });
         setSaveError('');
     }
 
@@ -54,11 +57,16 @@ function AdminUsers() {
         setSaving(true);
         setSaveError('');
         try {
+            const { name, district, county, role } = editForm;
+            const body: Record<string, string> = { name, district, county };
+            if (id !== currentUserId) {
+                body.role = role;
+            }
             const response = await fetch(`http://localhost:5000/api/users/${id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(editForm),
+                body: JSON.stringify(body),
             });
             const data = await response.json();
             if (!response.ok || data.error) {
@@ -169,9 +177,22 @@ function AdminUsers() {
                                         </td>
                                         <td>{user.email}</td>
                                         <td>
-                                            <span className={`role-pill role-pill--${user.role.role}`}>
-                                                {user.role.role}
-                                            </span>
+                                            {user.id === currentUserId ? (
+                                                <span className={`role-pill role-pill--${user.role.role}`}>
+                                                    {user.role.role}
+                                                </span>
+                                            ) : (
+                                                <select
+                                                    className="admin-users__edit-input"
+                                                    value={editForm.role}
+                                                    onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}
+                                                    aria-label="Role"
+                                                >
+                                                    {ASSIGNABLE_ROLES.map(r => (
+                                                        <option key={r} value={r}>{r}</option>
+                                                    ))}
+                                                </select>
+                                            )}
                                         </td>
                                         <td>
                                             <input

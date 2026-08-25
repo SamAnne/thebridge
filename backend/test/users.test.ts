@@ -31,8 +31,10 @@ test('PATCH /api/users/:id updates name/district/county for admins only, ignores
     assert.equal(edited.body.district, 'North District');
     assert.equal(edited.body.county, 'Fairfax');
 
-    // role/password in the body are silently ignored - counselor can still log in with the same password
-    await adminAgent.patch(`/api/users/${counselorId}`).send({ role: 'admin', password: 'newpass', name: 'Jordan Casey' });
+    // password in the body is ignored (not a writable field on this route) -
+    // counselor can still log in with the same password. role is NOT included
+    // here since it's a real writable field now (see the role-change test below).
+    await adminAgent.patch(`/api/users/${counselorId}`).send({ password: 'newpass', name: 'Jordan Casey' });
     const stillCounselorLogin = await request(app).post('/login').send(COUNSELOR);
     assert.equal(stillCounselorLogin.body.success, true);
 
@@ -50,6 +52,38 @@ test('PATCH /api/users/:id updates name/district/county for admins only, ignores
 
     // restore for other tests/manual use
     await adminAgent.patch(`/api/users/${counselorId}`).send({ county: 'Fairfax' });
+});
+
+test('PATCH /api/users/:id role changes: admin can change others, cannot change own, invalid role rejected', async () => {
+    const adminAgent = request.agent(app);
+    await adminAgent.post('/login').send(ADMIN);
+    const adminMe = await adminAgent.get('/api/me');
+    const adminId = adminMe.body.id;
+
+    const counselorAgent = request.agent(app);
+    await counselorAgent.post('/login').send(COUNSELOR);
+    const counselorMe = await counselorAgent.get('/api/me');
+    const counselorId = counselorMe.body.id;
+
+    // admin cannot change their own role
+    const selfChange = await adminAgent.patch(`/api/users/${adminId}`).send({ role: 'counselor' });
+    assert.equal(selfChange.status, 400);
+    assert.equal(selfChange.body.error, 'You cannot change your own role.');
+
+    // invalid role name is rejected
+    const invalidRole = await adminAgent.patch(`/api/users/${counselorId}`).send({ role: 'superadmin' });
+    assert.equal(invalidRole.status, 400);
+    assert.equal(invalidRole.body.error, 'Invalid role.');
+
+    // admin promotes counselor to admin
+    const promoted = await adminAgent.patch(`/api/users/${counselorId}`).send({ role: 'admin' });
+    assert.equal(promoted.status, 200);
+    assert.equal(promoted.body.role.role, 'admin');
+
+    // restore immediately so other tests/manual use see the expected role
+    const demoted = await adminAgent.patch(`/api/users/${counselorId}`).send({ role: 'counselor' });
+    assert.equal(demoted.status, 200);
+    assert.equal(demoted.body.role.role, 'counselor');
 });
 
 test('a validly-signed token for a user that no longer exists gets its cookie cleared', async () => {
