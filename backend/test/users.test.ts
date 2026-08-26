@@ -86,6 +86,45 @@ test('PATCH /api/users/:id role changes: admin can change others, cannot change 
     assert.equal(demoted.body.role.role, 'counselor');
 });
 
+test('PATCH /api/users/:id active flag: disabling revokes an existing session immediately, blocks login, and recovers on re-enable', async () => {
+    const adminAgent = request.agent(app);
+    await adminAgent.post('/login').send(ADMIN);
+    const adminMe = await adminAgent.get('/api/me');
+    const adminId = adminMe.body.id;
+
+    const counselorAgent = request.agent(app);
+    await counselorAgent.post('/login').send(COUNSELOR);
+    const counselorMe = await counselorAgent.get('/api/me');
+    const counselorId = counselorMe.body.id;
+    assert.equal(counselorMe.status, 200); // session works while active
+
+    // admin cannot disable their own account
+    const selfDisable = await adminAgent.patch(`/api/users/${adminId}`).send({ active: false });
+    assert.equal(selfDisable.status, 400);
+    assert.equal(selfDisable.body.error, 'You cannot disable your own account.');
+
+    // admin disables the counselor
+    const disabled = await adminAgent.patch(`/api/users/${counselorId}`).send({ active: false });
+    assert.equal(disabled.status, 200);
+    assert.equal(disabled.body.active, false);
+
+    // the counselor's *existing* session (same agent, no new login) is
+    // immediately rejected - this is the whole point of the DB-revalidation
+    // fix from earlier, now actually exercised by a real feature
+    const revoked = await counselorAgent.get('/api/me');
+    assert.equal(revoked.body.error, 'Could not authorize user.');
+
+    // a fresh login attempt is also blocked with a specific message
+    const blockedLogin = await request(app).post('/login').send(COUNSELOR);
+    assert.equal(blockedLogin.body.error, 'This account has been disabled. Contact an administrator.');
+
+    // re-enable restores login
+    const reenabled = await adminAgent.patch(`/api/users/${counselorId}`).send({ active: true });
+    assert.equal(reenabled.body.active, true);
+    const recoveredLogin = await request(app).post('/login').send(COUNSELOR);
+    assert.equal(recoveredLogin.body.success, true);
+});
+
 test('a validly-signed token for a user that no longer exists gets its cookie cleared', async () => {
     const ghostToken = jwt.sign(
         { id: 999999, email: 'ghost@example.com', role: 'admin' },

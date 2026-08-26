@@ -210,3 +210,55 @@ test('editing your own row shows role as read-only and omits role from the save'
 
     expect(patchBody).not.toHaveProperty('role');
 });
+
+test('disabling another user shows a Disabled badge and flips the button to Enable', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { id: 2, name: 'Jordan Casey', email: 'counselor@example.com', district: null, county: null, active: true, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'counselor' } },
+            ]),
+        })
+    );
+    let patchBody: any = null;
+    await page.route('http://localhost:5000/api/users/2', route => {
+        patchBody = route.request().postDataJSON();
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ id: 2, name: 'Jordan Casey', email: 'counselor@example.com', district: null, county: null, active: false, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'counselor' } }),
+        });
+    });
+
+    await page.goto('/Admin/Users');
+    await page.getByRole('button', { name: 'Disable' }).click();
+
+    expect(patchBody).toEqual({ active: false });
+    await expect(page.getByText('Disabled')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Enable' })).toBeVisible();
+});
+
+test('there is no Disable/Enable button on your own row', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([
+                { id: 1, name: 'Admin User', email: 'admin@example.com', district: null, county: null, active: true, createdAt: '2026-08-20T10:00:00.000Z', role: { role: 'admin' } },
+            ]),
+        })
+    );
+
+    await page.goto('/Admin/Users');
+
+    await expect(page.getByRole('button', { name: 'Disable' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Enable' })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
+});

@@ -10,6 +10,7 @@ interface RegisteredUser {
     district: string | null;
     county: string | null;
     createdAt: string;
+    active: boolean;
     role: { role: string };
 }
 
@@ -41,6 +42,35 @@ function AdminUsers() {
     const [editForm, setEditForm] = useState<EditForm>({ name: '', district: '', county: '', role: '' });
     const [saveError, setSaveError] = useState('');
     const [saving, setSaving] = useState(false);
+    const [toggleErrorId, setToggleErrorId] = useState<number | null>(null);
+    const [toggleError, setToggleError] = useState('');
+    const [togglingId, setTogglingId] = useState<number | null>(null);
+
+    async function toggleActive(user: RegisteredUser) {
+        setTogglingId(user.id);
+        setToggleErrorId(null);
+        setToggleError('');
+        try {
+            const response = await fetch(`http://localhost:5000/api/users/${user.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ active: !user.active }),
+            });
+            const data = await response.json();
+            if (!response.ok || data.error) {
+                setToggleErrorId(user.id);
+                setToggleError(data.error || 'Could not update this account.');
+                return;
+            }
+            setUsers(prev => prev.map(u => (u.id === user.id ? data : u)));
+        } catch {
+            setToggleErrorId(user.id);
+            setToggleError('Could not update this account.');
+        } finally {
+            setTogglingId(null);
+        }
+    }
 
     function startEdit(user: RegisteredUser) {
         setEditingId(user.id);
@@ -164,7 +194,7 @@ function AdminUsers() {
                         {filteredUsers.map(user => {
                             const isEditing = editingId === user.id;
                             return (
-                            <tr key={user.id}>
+                            <tr key={user.id} className={user.active ? '' : 'admin-users__row--disabled'}>
                                 {isEditing ? (
                                     <>
                                         <td>
@@ -221,7 +251,10 @@ function AdminUsers() {
                                     </>
                                 ) : (
                                     <>
-                                        <td className={user.name ? '' : 'admin-users__muted'}>{user.name ?? '—'}</td>
+                                        <td className={user.name ? '' : 'admin-users__muted'}>
+                                            {user.name ?? '—'}
+                                            {!user.active && <span className="status-pill status-pill--disabled">Disabled</span>}
+                                        </td>
                                         <td>{user.email}</td>
                                         <td>
                                             <span className={`role-pill role-pill--${user.role.role}`}>
@@ -232,7 +265,19 @@ function AdminUsers() {
                                         <td className={user.county ? '' : 'admin-users__muted'}>{user.county ?? '—'}</td>
                                         <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                                         <td>
-                                            <button className="btn btn--outline btn--small" onClick={() => startEdit(user)}>Edit</button>
+                                            <div className="admin-users__actions">
+                                                <button className="btn btn--outline btn--small" onClick={() => startEdit(user)}>Edit</button>
+                                                {user.id !== currentUserId && (
+                                                    <button
+                                                        className="btn btn--outline btn--small"
+                                                        disabled={togglingId === user.id}
+                                                        onClick={() => toggleActive(user)}
+                                                    >
+                                                        {user.active ? 'Disable' : 'Enable'}
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {toggleErrorId === user.id && <p className="alert-error admin-users__edit-error">{toggleError}</p>}
                                         </td>
                                     </>
                                 )}

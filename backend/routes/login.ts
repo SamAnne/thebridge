@@ -33,6 +33,11 @@ router.post('/', loginLimiter, async function(req: Request, res: Response, next:
     if (!match){
       return res.json({ error: 'Invalid email or password' });
     }
+
+    if (!user.active) {
+      return res.json({ error: 'This account has been disabled. Contact an administrator.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role.role},
       process.env.JWT_SECRET as string,
