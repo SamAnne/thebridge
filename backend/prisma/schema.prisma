@@ -42,10 +42,24 @@ model Resource {
   user      User @relation(fields: [userId], references: [id])
   date      DateTime @default(now())
   status    String  // rejected, approved, revision, unseen
+  published Boolean @default(false)
+  counties  String[] @default([])
+  districts String[] @default([])
   description  String
   files     File[]
-  // county?/district
   note      String
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  location    String?
+  link        String?
+  startsAt    DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model File {
