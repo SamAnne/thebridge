@@ -1,0 +1,13 @@
+.home__actions {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
+}
+
+@media (max-width: 480px) {
+    .home__actions {
+        flex-direction: column;
+    }
+}
