@@ -64,15 +64,173 @@ router.get('/user/:id', requireAuth, requireRole(Role.Admin), async (req: Reques
     res.json(resources);
 });
 
+const ADMIN_RESOURCE_SELECT = {
+    id: true,
+    description: true,
+    status: true,
+    published: true,
+    counties: true,
+    districts: true,
+    note: true,
+    date: true,
+    updatedAt: true,
+    files: true,
+    user: { select: { id: true, email: true } }
+} as const;
+
+// Resource Management: every resource, regardless of review/publication state,
+// so admins can manage resources after they leave the unseen queue.
+router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    const resources = await prisma.resource.findMany({
+        select: ADMIN_RESOURCE_SELECT,
+        orderBy: { date: 'desc' }
+    });
+    res.json(resources);
+});
+
+// Public, unauthenticated: only resources deliberately published AND still
+// approved (defense in depth - published alone isn't trusted). Explicit
+// public-safe shape, no notes/status/published/submitter info.
+router.get('/public', async (req: Request, res: Response) => {
+    const resources = await prisma.resource.findMany({
+        where: { published: true, status: 'approved' },
+        select: {
+            id: true,
+            description: true,
+            counties: true,
+            districts: true,
+            date: true,
+            updatedAt: true,
+            files: { select: { id: true, url: true, fileName: true } }
+        },
+        orderBy: { date: 'desc' }
+    });
+    res.json(resources);
+});
+
+// Admin edit: only description/counties/districts are writable here.
+// Publication is handled by the dedicated publish/unpublish routes below;
+// status/userId/timestamps/files are never accepted from the client.
+router.patch('/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+        return res.status(400).json({ error: 'Invalid resource id' });
+    }
+
+    const data: { description?: string; counties?: string[]; districts?: string[] } = {};
+
+    if ('description' in req.body) {
+        const description = req.body.description;
+        if (typeof description !== 'string' || description.trim().length === 0) {
+            return res.status(400).json({ error: 'Description must be a non-empty string.' });
+        }
+        data.description = description;
+    }
+
+    if ('counties' in req.body) {
+        const counties = req.body.counties;
+        if (!Array.isArray(counties) || !counties.every((c: unknown) => typeof c === 'string')) {
+            return res.status(400).json({ error: 'Counties must be an array of strings.' });
+        }
+        data.counties = counties;
+    }
+
+    if ('districts' in req.body) {
+        const districts = req.body.districts;
+        if (!Array.isArray(districts) || !districts.every((d: unknown) => typeof d === 'string')) {
+            return res.status(400).json({ error: 'Districts must be an array of strings.' });
+        }
+        data.districts = districts;
+    }
+
+    const existing = await prisma.resource.findUnique({ where: { id } });
+    if (!existing) {
+        return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    const updated = await prisma.resource.update({
+        where: { id },
+        data,
+        select: ADMIN_RESOURCE_SELECT
+    });
+    res.json(updated);
+});
+
+// Manual publish: only an approved resource may be made public this way.
+// Admin-direct publishing (skipping the review queue entirely) is not
+// implemented here - see the Phase 4 report for why.
+router.post('/:id/publish', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+        return res.status(400).json({ error: 'Invalid resource id' });
+    }
+
+    const existing = await prisma.resource.findUnique({ where: { id } });
+    if (!existing) {
+        return res.status(404).json({ error: 'Resource not found' });
+    }
+    if (existing.status !== 'approved') {
+        return res.status(400).json({ error: 'Only approved resources can be published.' });
+    }
+
+    const updated = await prisma.resource.update({
+        where: { id },
+        data: { published: true },
+        select: ADMIN_RESOURCE_SELECT
+    });
+    res.json(updated);
+});
+
+// Manual unpublish: retains the resource, its files, its review status and
+// history - only the publication flag changes. Idempotent.
+router.post('/:id/unpublish', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+        return res.status(400).json({ error: 'Invalid resource id' });
+    }
+
+    const existing = await prisma.resource.findUnique({ where: { id } });
+    if (!existing) {
+        return res.status(404).json({ error: 'Resource not found' });
+    }
+
+    const updated = await prisma.resource.update({
+        where: { id },
+        data: { published: false },
+        select: ADMIN_RESOURCE_SELECT
+    });
+    res.json(updated);
+});
+
+const REVIEW_STATUSES = ['unseen', 'approved', 'rejected', 'revision'] as const;
+
 // set status of resource
 router.post('/status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
     console.log("updating status of resource");
     const { id, status, note } = req.body;
-    const resource = await prisma.resource.update({
-        where: { id: Number(id) },
-        data: { status: String(status), note: String(note) }
-    });
-    res.json(resource);
+
+    const resourceId = Number(id);
+    if (!Number.isInteger(resourceId)) {
+        return res.status(400).json({ error: 'Invalid resource id' });
+    }
+    if (!REVIEW_STATUSES.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status.' });
+    }
+
+    // Review state and publication state are separate concepts, but a
+    // status change still drives publication: approving makes a resource
+    // public, anything else (reject/revision) takes it back down.
+    const published = status === 'approved';
+
+    try {
+        const resource = await prisma.resource.update({
+            where: { id: resourceId },
+            data: { status: String(status), note: String(note), published }
+        });
+        res.json(resource);
+    } catch (err) {
+        res.status(404).json({ error: 'Resource not found' });
+    }
 });
 
 // get all resources with a certain status
