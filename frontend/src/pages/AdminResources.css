@@ -1,0 +1,215 @@
+.admin-resources__filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.admin-resources__search {
+    flex: 1;
+    min-width: 240px;
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.admin-resources__search:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}
+
+.admin-resources__select {
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+}
+
+.admin-resources__empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--uvu-silver);
+}
+
+.admin-resources__list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.admin-resources__card {
+    text-align: left;
+}
+
+.admin-resources__badges {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.admin-resources__badge-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--uvu-silver);
+    margin-bottom: 4px;
+}
+
+.review-status-pill,
+.publication-pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.review-status-pill--unseen {
+    background: #f0f0f0;
+    color: #555;
+}
+
+.review-status-pill--approved {
+    background: rgba(39, 93, 56, 0.12);
+    color: var(--uvu-green-dark);
+}
+
+.review-status-pill--rejected {
+    background: var(--uvu-error-bg);
+    color: var(--uvu-error);
+}
+
+.review-status-pill--revision {
+    background: rgba(181, 101, 29, 0.12);
+    color: #8a4b12;
+}
+
+.publication-pill--published {
+    background: var(--uvu-green);
+    color: #fff;
+}
+
+.publication-pill--unpublished {
+    background: #fff;
+    color: var(--uvu-silver);
+    border: 1px solid var(--uvu-grey);
+}
+
+.admin-resources__description {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: #1a1a1a;
+    line-height: 1.5;
+}
+
+.admin-resources__tags {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.tag-pill {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    background: var(--uvu-grey-light);
+    border: 1px solid var(--uvu-grey);
+    color: #444;
+}
+
+.admin-resources__files {
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+.admin-resources__files a {
+    margin-right: 12px;
+    color: var(--uvu-green);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-resources__files a:hover {
+    text-decoration: underline;
+}
+
+.admin-resources__muted {
+    color: var(--uvu-silver);
+}
+
+.admin-resources__meta {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: var(--uvu-silver);
+}
+
+.admin-resources__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.admin-resources__confirm {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--uvu-error);
+}
+
+.admin-resources__hint {
+    font-size: 12px;
+}
+
+.admin-resources__inline-error {
+    margin: 12px 0 0;
+}
+
+.admin-resources__edit-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.admin-resources__edit-textarea:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}
+
+.admin-resources__edit-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.admin-resources__edit-input:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+}

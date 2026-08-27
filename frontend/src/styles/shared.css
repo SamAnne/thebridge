@@ -97,6 +97,15 @@
     background: var(--uvu-grey-light);
 }
 
+.btn--danger {
+    background: var(--uvu-error);
+    color: #fff;
+}
+
+.btn--danger:hover {
+    background: #8f1e18;
+}
+
 .btn--small {
     padding: 6px 14px;
     font-size: 13px;

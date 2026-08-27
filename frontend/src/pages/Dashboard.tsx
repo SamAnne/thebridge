@@ -174,7 +174,10 @@ function Dashboard() {
                 </div>
                 <div className="page__header-actions">
                     {user.role === 'admin' && (
-                        <Link className="btn btn--outline btn--small" to="/Admin/Users">Registered Users</Link>
+                        <>
+                            <Link className="btn btn--outline btn--small" to="/Admin/Resources">Manage Resources</Link>
+                            <Link className="btn btn--outline btn--small" to="/Admin/Users">Registered Users</Link>
+                        </>
                     )}
                     <button className="btn btn--outline btn--small" onClick={handleLogout}>Logout</button>
                 </div>
