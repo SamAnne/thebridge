@@ -317,3 +317,33 @@ test('publishing/unpublishing through the admin endpoints is reflected live on t
         await prisma.resource.delete({ where: { id: resource.id } });
     }
 });
+
+// The submission toggle must be enforced server-side, not just hidden in
+// the UI - this exercises the real POST /api/resources route (multipart
+// form, like the actual counselor submission form), not the direct-Prisma
+// createTestResource helper the rest of this file uses.
+test('POST /api/resources is rejected when submissions are closed, allowed when open', async () => {
+    let createdId: number | null = null;
+    try {
+        await adminAgent.patch('/api/settings').send({ acceptingSubmissions: false });
+
+        const rejected = await counselorAgent.post('/api/resources').field('description', 'submitted while closed');
+        assert.equal(rejected.status, 403);
+        assert.equal(rejected.body.error, 'Resource submissions are currently closed.');
+
+        const stillNone = await prisma.resource.findFirst({ where: { description: 'submitted while closed' } });
+        assert.equal(stillNone, null, 'no resource should have been created while closed');
+
+        await adminAgent.patch('/api/settings').send({ acceptingSubmissions: true });
+
+        const allowed = await counselorAgent.post('/api/resources').field('description', 'submitted while open');
+        assert.equal(allowed.status, 200);
+        assert.equal(allowed.body.description, 'submitted while open');
+        createdId = allowed.body.id;
+    } finally {
+        await adminAgent.patch('/api/settings').send({ acceptingSubmissions: true });
+        if (createdId) {
+            await prisma.resource.delete({ where: { id: createdId } });
+        }
+    }
+});

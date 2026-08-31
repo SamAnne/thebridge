@@ -1,0 +1,27 @@
+.admin-settings__card {
+    max-width: 480px;
+}
+
+.admin-settings__toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.admin-settings__toggle-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.admin-settings__toggle-hint {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--uvu-silver);
+}
+
+.admin-settings__saved {
+    margin: 0 0 16px;
+    font-size: 14px;
+    color: var(--uvu-green-dark);
+}

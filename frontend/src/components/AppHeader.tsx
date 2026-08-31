@@ -15,6 +15,7 @@ const ADMIN_NAV_ITEMS = [
     { to: '/Dashboard', label: 'Dashboard' },
     { to: '/Admin/Resources', label: 'Resources' },
     { to: '/Admin/Users', label: 'Users' },
+    { to: '/Admin/Settings', label: 'Settings' },
 ];
 
 function AppHeader({ user, onLogout }: AppHeaderProps) {
