@@ -52,7 +52,7 @@ test('admin Resource Management endpoints reject unauthenticated and counselor r
     const resource = await createTestResource();
     try {
         const noAuthList = await request(app).get('/api/resources');
-        assert.equal(noAuthList.body.error, 'Could not authorize user.');
+        assert.equal(noAuthList.body.error, 'Could not authorize role of user.');
 
         const listAsCounselor = await counselorAgent.get('/api/resources');
         assert.equal(listAsCounselor.body.error, 'Not allowed with current role.');
@@ -232,6 +232,63 @@ test('GET /api/resources/public returns only published+approved resources, in a 
         await prisma.resource.deleteMany({
             where: { id: { in: [publishedApproved.id, unpublishedApproved.id, unseen.id, rejected.id, revision.id] } }
         });
+    }
+});
+
+test('GET /api/resources/public geographic filtering: empty arrays are region-wide, matches respect county+district together', async () => {
+    // region-wide: no geographic tags at all
+    const regionWide = await createTestResource({ status: 'approved', published: true, counties: [], districts: [] });
+    // tagged to a specific county+district
+    const utahAlpine = await createTestResource({ status: 'approved', published: true, counties: ['Utah'], districts: ['Alpine School District'] });
+    // tagged to a different county, same district
+    const wasatchAlpine = await createTestResource({ status: 'approved', published: true, counties: ['Wasatch'], districts: ['Alpine School District'] });
+    // tagged to Utah county, but a different district
+    const utahOtherDistrict = await createTestResource({ status: 'approved', published: true, counties: ['Utah'], districts: ['Nebo School District'] });
+    // county-tagged but district-agnostic (empty districts)
+    const utahAnyDistrict = await createTestResource({ status: 'approved', published: true, counties: ['Utah'], districts: [] });
+
+    const allIds = [regionWide.id, utahAlpine.id, wasatchAlpine.id, utahOtherDistrict.id, utahAnyDistrict.id];
+    try {
+        // no filter: everything approved+published shows up, geography irrelevant
+        const noFilter = await request(app).get('/api/resources/public');
+        const noFilterIds = noFilter.body.map((r: any) => r.id);
+        for (const id of allIds) assert.ok(noFilterIds.includes(id), `expected ${id} with no filter`);
+
+        // county=Utah: matches Utah-tagged resources AND region-wide (empty counties)
+        const byCounty = await request(app).get('/api/resources/public').query({ county: 'Utah' });
+        const byCountyIds = byCounty.body.map((r: any) => r.id);
+        assert.ok(byCountyIds.includes(regionWide.id), 'region-wide (empty counties) should match any county filter');
+        assert.ok(byCountyIds.includes(utahAlpine.id));
+        assert.ok(byCountyIds.includes(utahOtherDistrict.id));
+        assert.ok(byCountyIds.includes(utahAnyDistrict.id));
+        assert.ok(!byCountyIds.includes(wasatchAlpine.id), 'Wasatch-only resource should not match county=Utah');
+
+        // district=Alpine School District: matches Alpine-tagged AND region-wide/district-agnostic
+        const byDistrict = await request(app).get('/api/resources/public').query({ district: 'Alpine School District' });
+        const byDistrictIds = byDistrict.body.map((r: any) => r.id);
+        assert.ok(byDistrictIds.includes(regionWide.id));
+        assert.ok(byDistrictIds.includes(utahAlpine.id));
+        assert.ok(byDistrictIds.includes(wasatchAlpine.id));
+        assert.ok(byDistrictIds.includes(utahAnyDistrict.id), 'district-agnostic (empty districts) should match any district filter');
+        assert.ok(!byDistrictIds.includes(utahOtherDistrict.id), 'Nebo-tagged resource should not match district=Alpine School District');
+
+        // county=Utah AND district=Alpine School District: both conditions must hold
+        const byBoth = await request(app).get('/api/resources/public').query({ county: 'Utah', district: 'Alpine School District' });
+        const byBothIds = byBoth.body.map((r: any) => r.id);
+        assert.ok(byBothIds.includes(regionWide.id), 'region-wide always matches');
+        assert.ok(byBothIds.includes(utahAlpine.id), 'exact county+district match');
+        assert.ok(byBothIds.includes(utahAnyDistrict.id), 'Utah county + district-agnostic matches');
+        assert.ok(!byBothIds.includes(wasatchAlpine.id), 'Wasatch + Alpine should be excluded (wrong county)');
+        assert.ok(!byBothIds.includes(utahOtherDistrict.id), 'Utah + Nebo should be excluded (wrong district)');
+
+        // nonmatching county with no matching resources at all besides region-wide
+        const byNonmatchingCounty = await request(app).get('/api/resources/public').query({ county: 'Salt Lake' });
+        const byNonmatchingCountyIds = byNonmatchingCounty.body.map((r: any) => r.id);
+        assert.ok(byNonmatchingCountyIds.includes(regionWide.id));
+        assert.ok(!byNonmatchingCountyIds.includes(utahAlpine.id));
+        assert.ok(!byNonmatchingCountyIds.includes(wasatchAlpine.id));
+    } finally {
+        await prisma.resource.deleteMany({ where: { id: { in: allIds } } });
     }
 });
 

@@ -2,13 +2,13 @@ import multer from 'multer';
 import { supabase } from '../db/supabaseClient';
 import { prisma } from '../db/connection';
 import express, { Request, Response, NextFunction } from 'express';
-import { requireAuth, requireRole } from '../routes/roles';
+import { requireRole } from '../routes/roles';
 import Role from '../models/role';
 const router = express.Router();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/', requireAuth, requireRole(Role.Admin, Role.Counselor), upload.array('files', 10), async (req: Request, res: Response) => {
+router.post('/', requireRole(Role.Admin, Role.Counselor), upload.array('files', 10), async (req: Request, res: Response) => {
     try {
         const { description } = req.body;
         const userId = (req as any).user.id;
@@ -55,7 +55,7 @@ router.post('/', requireAuth, requireRole(Role.Admin, Role.Counselor), upload.ar
 });
 
 // get all resources from one user
-router.get('/user/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.get('/user/:id', requireRole(Role.Admin), async (req: Request, res: Response) => {
     console.log('getting all resource from user');
     const resources = await prisma.resource.findMany({
         where: { userId: Number(req.params.id) },
@@ -80,7 +80,7 @@ const ADMIN_RESOURCE_SELECT = {
 
 // Resource Management: every resource, regardless of review/publication state,
 // so admins can manage resources after they leave the unseen queue.
-router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.get('/', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const resources = await prisma.resource.findMany({
         select: ADMIN_RESOURCE_SELECT,
         orderBy: { date: 'desc' }
@@ -91,9 +91,27 @@ router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: 
 // Public, unauthenticated: only resources deliberately published AND still
 // approved (defense in depth - published alone isn't trusted). Explicit
 // public-safe shape, no notes/status/published/submitter info.
+//
+// Optional ?county= / ?district= filtering: an empty counties/districts
+// array means the resource is region-wide, not "untagged and hidden" - so
+// it matches every filter value, not just an explicit "all" selection.
 router.get('/public', async (req: Request, res: Response) => {
+    const { county, district } = req.query;
+    const and: object[] = [];
+
+    if (typeof county === 'string' && county.trim().length > 0) {
+        and.push({ OR: [{ counties: { has: county.trim() } }, { counties: { isEmpty: true } }] });
+    }
+    if (typeof district === 'string' && district.trim().length > 0) {
+        and.push({ OR: [{ districts: { has: district.trim() } }, { districts: { isEmpty: true } }] });
+    }
+
     const resources = await prisma.resource.findMany({
-        where: { published: true, status: 'approved' },
+        where: {
+            published: true,
+            status: 'approved',
+            ...(and.length > 0 ? { AND: and } : {})
+        },
         select: {
             id: true,
             description: true,
@@ -111,7 +129,7 @@ router.get('/public', async (req: Request, res: Response) => {
 // Admin edit: only description/counties/districts are writable here.
 // Publication is handled by the dedicated publish/unpublish routes below;
 // status/userId/timestamps/files are never accepted from the client.
-router.patch('/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.patch('/:id', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
         return res.status(400).json({ error: 'Invalid resource id' });
@@ -159,7 +177,7 @@ router.patch('/:id', requireAuth, requireRole(Role.Admin), async (req: Request, 
 // Manual publish: only an approved resource may be made public this way.
 // Admin-direct publishing (skipping the review queue entirely) is not
 // implemented here - see the Phase 4 report for why.
-router.post('/:id/publish', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.post('/:id/publish', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
         return res.status(400).json({ error: 'Invalid resource id' });
@@ -183,7 +201,7 @@ router.post('/:id/publish', requireAuth, requireRole(Role.Admin), async (req: Re
 
 // Manual unpublish: retains the resource, its files, its review status and
 // history - only the publication flag changes. Idempotent.
-router.post('/:id/unpublish', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.post('/:id/unpublish', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
         return res.status(400).json({ error: 'Invalid resource id' });
@@ -205,7 +223,7 @@ router.post('/:id/unpublish', requireAuth, requireRole(Role.Admin), async (req: 
 const REVIEW_STATUSES = ['unseen', 'approved', 'rejected', 'revision'] as const;
 
 // set status of resource
-router.post('/status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.post('/status', requireRole(Role.Admin), async (req: Request, res: Response) => {
     console.log("updating status of resource");
     const { id, status, note } = req.body;
 
@@ -236,7 +254,7 @@ router.post('/status', requireAuth, requireRole(Role.Admin), async (req: Request
 // get all resources with a certain status
 // by a certain order? oldest to new
 // or handle in frontend
-router.get('/:status', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.get('/:status', requireRole(Role.Admin), async (req: Request, res: Response) => {
     console.log('getting all resources with a certain status');
     const resources = await prisma.resource.findMany({
         where: { status: String(req.params.status) },

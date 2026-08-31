@@ -1,11 +1,11 @@
 import { prisma } from '../db/connection';
 import express, { Request, Response } from 'express';
-import { requireAuth, requireRole } from '../routes/roles';
+import { requireRole } from '../routes/roles';
 import Role from '../models/role';
 const router = express.Router();
 
 // get all registered users
-router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.get('/', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const users = await prisma.user.findMany({
         select: {
             id: true,
@@ -22,7 +22,7 @@ router.get('/', requireAuth, requireRole(Role.Admin), async (req: Request, res: 
 });
 
 // update a user's name/district/county/role/active (not email or password)
-router.patch('/:id', requireAuth, requireRole(Role.Admin), async (req: Request, res: Response) => {
+router.patch('/:id', requireRole(Role.Admin), async (req: Request, res: Response) => {
     const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
         return res.status(400).json({ error: 'Invalid user id' });
