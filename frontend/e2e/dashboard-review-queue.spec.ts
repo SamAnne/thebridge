@@ -21,11 +21,9 @@ test('a note typed on one resource is not submitted for a different resource', a
         })
     );
 
-    let statusBody: { id: number; status: string; note?: string } | null = null;
-    await page.route('http://localhost:5000/api/resources/status', route => {
-        statusBody = route.request().postDataJSON();
-        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });
-    });
+    await page.route('http://localhost:5000/api/resources/status', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) })
+    );
 
     await page.goto('/Dashboard');
 
@@ -37,8 +35,14 @@ test('a note typed on one resource is not submitted for a different resource', a
 
     // Approve the FIRST card, which was rendered before the second. A
     // shared-ref bug would submit the second card's note here instead,
-    // since it was the last input rendered.
-    await firstCard.getByRole('button', { name: 'Approve' }).click();
+    // since it was the last input rendered. Race the click against
+    // waitForRequest (rather than reading a variable set by the route
+    // handler afterward) so the assertion can't run before the request
+    // has actually been captured.
+    const [statusRequest] = await Promise.all([
+        page.waitForRequest('**/api/resources/status'),
+        firstCard.getByRole('button', { name: 'Approve' }).click(),
+    ]);
 
-    expect(statusBody).toEqual({ id: 101, status: 'approved', note: 'Note for the first resource' });
+    expect(statusRequest.postDataJSON()).toEqual({ id: 101, status: 'approved', note: 'Note for the first resource' });
 });
