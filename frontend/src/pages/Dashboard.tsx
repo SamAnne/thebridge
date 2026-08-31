@@ -107,7 +107,11 @@ function Dashboard() {
     const [user, setUser] = useState<User>(items[0]);
     const [unseenResources, setUnseenResources] = useState<Resource[] | null>(items[1]);
     const descriptionVal = useRef<HTMLInputElement>(null);
-    const noteVal = useRef<HTMLInputElement>(null);
+    // One note input per rendered card, keyed by resource id - a single
+    // shared ref here would only ever point at the last-rendered card's
+    // input, so a note typed on one resource could get submitted for
+    // whichever resource's Approve/Reject/Revision button was clicked.
+    const noteRefs = useRef<Map<number, HTMLInputElement>>(new Map());
     const fileVal = useRef<HTMLInputElement>(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -119,7 +123,7 @@ function Dashboard() {
 
     async function postStatus(status: string, id: number) {
         try {
-            const note = noteVal.current?.value;
+            const note = noteRefs.current.get(id)?.value;
             await fetch('http://localhost:5000/api/resources/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -220,7 +224,14 @@ function Dashboard() {
                             )}
                             <span className="resource-card__date">Submitted {new Date(resource.date).toLocaleString()}</span>
                             <div className="resource-card__note">
-                                <input type="text" ref={noteVal} placeholder="Notes for the submitter (optional)"></input>
+                                <input
+                                    type="text"
+                                    ref={el => {
+                                        if (el) noteRefs.current.set(resource.id, el);
+                                        else noteRefs.current.delete(resource.id);
+                                    }}
+                                    placeholder="Notes for the submitter (optional)"
+                                ></input>
                             </div>
                             <div className="resource-card__actions">
                                 <button className="btn btn--primary btn--small" onClick={() => postStatus('approved', resource.id)}>Approve</button>
