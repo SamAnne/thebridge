@@ -1,33 +1,31 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --heading-font: 'Poppins', system-ui, sans-serif;
 
   /* UVU brand palette (https://www.uvu.edu/web/support/300-design-format/301-approved-colors.html) */
   --uvu-green: #275d38;
   --uvu-green-dark: #1e482c;
   --uvu-green-light: #3f6f4e;
+  --uvu-green-tint: rgba(39, 93, 56, 0.04);
   --uvu-silver: #8e8c89;
   --uvu-grey: #e8e8e8;
   --uvu-grey-light: #f9f9f9;
   --uvu-error: #b3261e;
   --uvu-error-bg: rgba(179, 38, 30, 0.08);
-  --heading-font: 'Poppins', system-ui, sans-serif;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  --text: #3a3a3a;
+  --bg: #fff;
+
+  /* shared surface tokens - reference these instead of repeating the same
+     radius/shadow/focus-ring literal in every page-scoped stylesheet */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(39, 93, 56, 0.06);
+  --focus-ring: 0 0 0 3px rgba(39, 93, 56, 0.12);
+
+  font: 16px/145% var(--sans);
+  letter-spacing: normal;
   color-scheme: light;
   color: var(--text);
   background: var(--bg);
@@ -35,10 +33,6 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
 #root {
@@ -55,46 +49,6 @@ body {
   margin: 0;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
 p {
   margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }

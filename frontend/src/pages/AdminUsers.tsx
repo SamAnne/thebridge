@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLoaderData, Link, useNavigate } from 'react-router-dom';
-import { requireRole, logout } from '../lib/auth';
+import { useLoaderData, useNavigate, redirect } from 'react-router-dom';
+import { logout } from '../lib/auth';
+import AppHeader from '../components/AppHeader';
 import './AdminUsers.css';
 
 interface RegisteredUser {
@@ -16,13 +17,55 @@ interface RegisteredUser {
 
 const ASSIGNABLE_ROLES = ['admin', 'counselor', 'student'];
 
+interface MeResult {
+    error?: string;
+    id?: number;
+    email?: string;
+    role?: string;
+}
+
+interface FetchJsonResult<T> {
+    ok: boolean;
+    data: T;
+}
+
+async function fetchJson<T>(url: string): Promise<FetchJsonResult<T> | null> {
+    try {
+        const response = await fetch(url, { credentials: 'include' });
+        const data = await response.json();
+        return { ok: response.ok, data };
+    } catch {
+        return null;
+    }
+}
+
+// /api/me and /api/users are fetched concurrently rather than gating one
+// behind the other. GET /api/users is admin-only server-side and
+// re-verifies the session on every request, so it is the authoritative
+// check for whether this page is allowed to render - /api/me is only used
+// for the header's identity display and for recognizing "your own row" in
+// the table below. This page has no in-page "could not load" state (it
+// never had one), so any failure to load the user list - an auth rejection
+// or a genuine server/network error - still results in a redirect to
+// /Login, matching the page's previous behavior.
 export async function loader() {
-    const currentUser = await requireRole('admin');
-    const response = await fetch('http://localhost:5000/api/users', {
-        credentials: 'include'
-    });
-    const users = await response.json();
-    return { users: users as RegisteredUser[], currentUserId: currentUser.id };
+    const [meResult, usersResult] = await Promise.all([
+        fetchJson<MeResult>('http://localhost:5000/api/me'),
+        fetchJson<RegisteredUser[] | { error: string }>('http://localhost:5000/api/users'),
+    ]);
+
+    const usersData = usersResult?.data;
+    if (!usersResult || !usersResult.ok || !Array.isArray(usersData)) {
+        throw redirect('/Login');
+    }
+
+    const me = meResult?.ok ? meResult.data : undefined;
+    const currentUser = me && !me.error && typeof me.email === 'string' && typeof me.role === 'string'
+        ? { email: me.email, role: me.role }
+        : { email: 'Signed in', role: 'admin' };
+    const currentUserId = me && !me.error && typeof me.id === 'number' ? me.id : -1;
+
+    return { users: usersData, currentUserId, currentUser };
 }
 
 interface EditForm {
@@ -33,7 +76,11 @@ interface EditForm {
 }
 
 function AdminUsers() {
-    const { users: loaderUsers, currentUserId } = useLoaderData() as { users: RegisteredUser[]; currentUserId: number };
+    const { users: loaderUsers, currentUserId, currentUser } = useLoaderData() as {
+        users: RegisteredUser[];
+        currentUserId: number;
+        currentUser: { email: string; role: string };
+    };
     const [users, setUsers] = useState(loaderUsers);
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
@@ -133,10 +180,11 @@ function AdminUsers() {
     }
 
     return (
-        <div className="page">
+        <>
+            <AppHeader user={currentUser} onLogout={handleLogout} />
+            <div className="page">
             <div className="page__header">
                 <div>
-                    <p className="page__eyebrow">Admin</p>
                     <h1 className="page__title">Registered Users</h1>
                     <p className="page__subtitle">
                         {filteredUsers.length === users.length
@@ -144,23 +192,19 @@ function AdminUsers() {
                             : `${filteredUsers.length} of ${users.length} accounts`}
                     </p>
                 </div>
-                <div className="page__header-actions">
-                    <Link className="btn btn--outline btn--small" to="/Dashboard">Back to Dashboard</Link>
-                    <button className="btn btn--outline btn--small" onClick={handleLogout}>Logout</button>
-                </div>
             </div>
 
-            <div className="admin-users__filters">
+            <div className="toolbar">
                 <input
                     type="text"
-                    className="admin-users__search"
+                    className="input"
                     placeholder="Search by name, email, district, or county..."
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     aria-label="Search users"
                 />
                 <select
-                    className="admin-users__role-filter"
+                    className="select"
                     value={roleFilter}
                     onChange={e => setRoleFilter(e.target.value)}
                     aria-label="Filter by role"
@@ -174,7 +218,7 @@ function AdminUsers() {
 
             <div className="card admin-users__card">
                 {filteredUsers.length === 0 ? (
-                    <p className="admin-users__empty">
+                    <p className="empty-state">
                         {users.length === 0 ? 'No registered users yet.' : 'No users match your search.'}
                     </p>
                 ) : (
@@ -288,7 +332,8 @@ function AdminUsers() {
                 </table>
                 )}
             </div>
-        </div>
+            </div>
+        </>
     );
 }
 

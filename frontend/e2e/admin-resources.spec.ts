@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-// AdminResources' loader calls requireRole('admin') then fetches
-// http://localhost:5000/api/resources. Both calls are intercepted here.
+// AdminResources' loader fetches http://localhost:5000/api/me and
+// http://localhost:5000/api/resources concurrently; /api/resources is the
+// authoritative check (it re-verifies auth/role server-side), so both are
+// intercepted here even for the redirect-on-rejection tests.
 
 const BASE_RESOURCE = {
     id: 1,
@@ -21,6 +23,9 @@ test('no session redirects to /Login', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Could not authorize user.' }) })
     );
+    await page.route('http://localhost:5000/api/resources', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Could not authorize role of user.' }) })
+    );
 
     await page.goto('/Admin/Resources');
 
@@ -30,6 +35,9 @@ test('no session redirects to /Login', async ({ page }) => {
 test('counselor role redirects to /Login (admin only)', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 2, email: 'counselor@example.com', role: 'counselor' }) })
+    );
+    await page.route('http://localhost:5000/api/resources', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Not allowed with current role.' }) })
     );
 
     await page.goto('/Admin/Resources');
@@ -108,7 +116,7 @@ test('search and filters narrow the list', async ({ page }) => {
     await page.getByLabel('Search resources').fill('');
     await page.getByLabel('Filter by publication state').selectOption('unpublished');
     await expect(page.getByText('1 of 2 resources')).toBeVisible();
-    await expect(page.getByText('No counties tagged')).toBeVisible();
+    await expect(page.getByText('Region-wide')).toBeVisible();
 });
 
 test('editing description, counties, and districts saves via PATCH and updates the card', async ({ page }) => {

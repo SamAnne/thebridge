@@ -1,11 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-// AdminUsers' loader calls requireRole('admin') then fetches
-// http://localhost:5000/api/users. Both calls are intercepted here.
+// AdminUsers' loader fetches http://localhost:5000/api/me and
+// http://localhost:5000/api/users concurrently; /api/users is the
+// authoritative check (it re-verifies auth/role server-side), so both are
+// intercepted here even for the redirect-on-rejection tests.
 
 test('no session redirects to /Login', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Could not authorize user.' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Could not authorize role of user.' }) })
     );
 
     await page.goto('/Admin/Users');
@@ -16,6 +21,9 @@ test('no session redirects to /Login', async ({ page }) => {
 test('counselor role redirects to /Login (admin only)', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 2, email: 'counselor@example.com', role: 'counselor' }) })
+    );
+    await page.route('http://localhost:5000/api/users', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Not allowed with current role.' }) })
     );
 
     await page.goto('/Admin/Users');

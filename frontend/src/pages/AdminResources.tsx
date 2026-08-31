@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useLoaderData, Link, useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate } from 'react-router-dom';
 import { logout } from '../lib/auth';
+import AppHeader from '../components/AppHeader';
 import type { AdminResource } from './AdminResources.loader';
 import './AdminResources.css';
 
@@ -31,9 +32,10 @@ function formatDate(value: string) {
 }
 
 function AdminResources() {
-    const { resources: loaderResources, error: loadError } = useLoaderData() as {
+    const { resources: loaderResources, error: loadError, currentUser } = useLoaderData() as {
         resources: AdminResource[];
         error: string | null;
+        currentUser: { email: string; role: string };
     };
     const [resources, setResources] = useState(loaderResources);
     const navigate = useNavigate();
@@ -168,20 +170,17 @@ function AdminResources() {
     }
 
     return (
-        <div className="page">
+        <>
+            <AppHeader user={currentUser} onLogout={handleLogout} />
+            <div className="page">
             <div className="page__header">
                 <div>
-                    <p className="page__eyebrow">Admin</p>
                     <h1 className="page__title">Resource Management</h1>
                     <p className="page__subtitle">
                         {filteredResources.length === resources.length
                             ? `${resources.length} resource${resources.length === 1 ? '' : 's'}`
                             : `${filteredResources.length} of ${resources.length} resources`}
                     </p>
-                </div>
-                <div className="page__header-actions">
-                    <Link className="btn btn--outline btn--small" to="/Dashboard">Back to Dashboard</Link>
-                    <button className="btn btn--outline btn--small" onClick={handleLogout}>Logout</button>
                 </div>
             </div>
 
@@ -191,17 +190,17 @@ function AdminResources() {
 
             {!loadError && (
                 <>
-                    <div className="admin-resources__filters">
+                    <div className="toolbar">
                         <input
                             type="text"
-                            className="admin-resources__search"
+                            className="input"
                             placeholder="Search by description..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             aria-label="Search resources"
                         />
                         <select
-                            className="admin-resources__select"
+                            className="select"
                             value={statusFilter}
                             onChange={e => setStatusFilter(e.target.value)}
                             aria-label="Filter by review status"
@@ -213,7 +212,7 @@ function AdminResources() {
                             <option value="revision">Revision Needed</option>
                         </select>
                         <select
-                            className="admin-resources__select"
+                            className="select"
                             value={publishedFilter}
                             onChange={e => setPublishedFilter(e.target.value)}
                             aria-label="Filter by publication state"
@@ -225,9 +224,9 @@ function AdminResources() {
                     </div>
 
                     {resources.length === 0 ? (
-                        <p className="admin-resources__empty">No resources yet.</p>
+                        <p className="empty-state">No resources yet.</p>
                     ) : filteredResources.length === 0 ? (
-                        <p className="admin-resources__empty">No resources match your filters.</p>
+                        <p className="empty-state">No resources match your filters.</p>
                     ) : (
                         <div className="admin-resources__list">
                             {filteredResources.map(resource => {
@@ -252,7 +251,7 @@ function AdminResources() {
                                                     <label htmlFor={`counties-${resource.id}`}>Counties (comma-separated)</label>
                                                     <input
                                                         id={`counties-${resource.id}`}
-                                                        className="admin-resources__edit-input"
+                                                        className="input admin-resources__edit-input"
                                                         value={editForm.countiesText}
                                                         onChange={e => setEditForm(f => ({ ...f, countiesText: e.target.value }))}
                                                         placeholder="e.g. Utah, Wasatch"
@@ -262,7 +261,7 @@ function AdminResources() {
                                                     <label htmlFor={`districts-${resource.id}`}>Districts (comma-separated)</label>
                                                     <input
                                                         id={`districts-${resource.id}`}
-                                                        className="admin-resources__edit-input"
+                                                        className="input admin-resources__edit-input"
                                                         value={editForm.districtsText}
                                                         onChange={e => setEditForm(f => ({ ...f, districtsText: e.target.value }))}
                                                         placeholder="e.g. Alpine School District"
@@ -278,48 +277,41 @@ function AdminResources() {
                                             </>
                                         ) : (
                                             <>
-                                                <div className="admin-resources__badges">
-                                                    <div>
-                                                        <span className="admin-resources__badge-label">Review status</span>
-                                                        <span className={`review-status-pill review-status-pill--${resource.status}`}>
-                                                            {STATUS_LABELS[resource.status] ?? resource.status}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="admin-resources__badge-label">Public visibility</span>
-                                                        <span className={`publication-pill publication-pill--${resource.published ? 'published' : 'unpublished'}`}>
-                                                            {resource.published ? 'Published' : 'Unpublished'}
-                                                        </span>
-                                                    </div>
+                                                <div className="admin-resources__top-row">
+                                                    <span className={`review-status-pill review-status-pill--${resource.status}`}>
+                                                        {STATUS_LABELS[resource.status] ?? resource.status}
+                                                    </span>
+                                                    <span className={`publication-pill publication-pill--${resource.published ? 'published' : 'unpublished'}`}>
+                                                        {resource.published ? 'Published' : 'Unpublished'}
+                                                    </span>
+                                                    <span className="admin-resources__meta">
+                                                        Submitted {formatDate(resource.date)} · Updated {formatDate(resource.updatedAt)} · {resource.user.email}
+                                                    </span>
                                                 </div>
 
                                                 <p className="admin-resources__description">{truncate(resource.description)}</p>
 
-                                                <div className="admin-resources__tags">
-                                                    <div>
-                                                        <strong>Counties:</strong>{' '}
-                                                        {resource.counties.length === 0 ? (
-                                                            <span className="admin-resources__muted">No counties tagged</span>
-                                                        ) : (
-                                                            resource.counties.map(county => (
-                                                                <span className="tag-pill" key={county}>{county}</span>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <strong>Districts:</strong>{' '}
-                                                        {resource.districts.length === 0 ? (
-                                                            <span className="admin-resources__muted">No districts tagged</span>
-                                                        ) : (
-                                                            resource.districts.map(district => (
-                                                                <span className="tag-pill" key={district}>{district}</span>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </div>
+                                                <p className="admin-resources__scope">
+                                                    <span className="admin-resources__scope-label">Counties</span>
+                                                    {resource.counties.length === 0 ? (
+                                                        <span className="admin-resources__muted">Region-wide</span>
+                                                    ) : (
+                                                        resource.counties.map(county => (
+                                                            <span className="tag-pill" key={county}>{county}</span>
+                                                        ))
+                                                    )}
+                                                    <span className="admin-resources__scope-label">Districts</span>
+                                                    {resource.districts.length === 0 ? (
+                                                        <span className="admin-resources__muted">All districts</span>
+                                                    ) : (
+                                                        resource.districts.map(district => (
+                                                            <span className="tag-pill" key={district}>{district}</span>
+                                                        ))
+                                                    )}
+                                                </p>
 
-                                                <div className="admin-resources__files">
-                                                    <strong>Files:</strong>{' '}
+                                                <p className="admin-resources__files">
+                                                    <span className="admin-resources__scope-label">Files</span>
                                                     {resource.files.length === 0 ? (
                                                         <span className="admin-resources__muted">None attached</span>
                                                     ) : (
@@ -329,10 +321,6 @@ function AdminResources() {
                                                             </a>
                                                         ))
                                                     )}
-                                                </div>
-
-                                                <p className="admin-resources__meta">
-                                                    Submitted {formatDate(resource.date)} by {resource.user.email} · Updated {formatDate(resource.updatedAt)}
                                                 </p>
 
                                                 <div className="admin-resources__actions">
@@ -372,7 +360,7 @@ function AdminResources() {
                                                         </button>
                                                     ) : (
                                                         <>
-                                                            <button className="btn btn--primary btn--small" disabled>Publish</button>
+                                                            <button className="btn btn--primary btn--small" disabled title="Only approved resources can be published.">Publish</button>
                                                             <span className="admin-resources__muted admin-resources__hint">
                                                                 Only approved resources can be published.
                                                             </span>
@@ -392,7 +380,8 @@ function AdminResources() {
                     )}
                 </>
             )}
-        </div>
+            </div>
+        </>
     );
 }
 

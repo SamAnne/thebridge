@@ -4,6 +4,9 @@ test('clicking Logout on the Dashboard calls /logout and redirects to /Login', a
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 2, email: 'counselor@example.com', role: 'counselor' }) })
     );
+    await page.route('http://localhost:5000/api/resources/unseen', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Not allowed with current role.' }) })
+    );
     let logoutCalled = false;
     await page.route('http://localhost:5000/logout', route => {
         logoutCalled = true;
