@@ -1,8 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 // PublicResources' loader fetches http://localhost:5000/api/resources/public
-// (no auth). These tests intercept that call - same convention as the rest
-// of the suite (backend calls mocked, no live server/DB needed).
+// and http://localhost:5000/api/settings/public (both no-auth) concurrently.
+// These tests intercept both calls - same convention as the rest of the
+// suite (backend calls mocked, no live server/DB needed). Default settings
+// mock returns no contactEmail so existing assertions aren't affected by
+// the contact line; the dedicated tests below override it.
+test.beforeEach(async ({ page }) => {
+    await page.route('http://localhost:5000/api/settings/public', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ hubName: 'The Bridge', contactEmail: '' }) })
+    );
+});
 
 const SAMPLE_RESOURCE = {
     id: 1,
@@ -159,6 +167,9 @@ test('admin publishing a resource makes it appear on the public page', async ({ 
     await page.route('http://localhost:5000/api/resources', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([unpublished]) })
     );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: '', defaultCounty: null, acceptingSubmissions: true }) })
+    );
     await page.route('http://localhost:5000/api/resources/1/publish', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...unpublished, published: true }) })
     );
@@ -189,6 +200,9 @@ test('admin unpublishing a resource removes it from the public page', async ({ p
     await page.route('http://localhost:5000/api/resources', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([published]) })
     );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: '', defaultCounty: null, acceptingSubmissions: true }) })
+    );
     await page.route('http://localhost:5000/api/resources/1/unpublish', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...published, published: false }) })
     );
@@ -205,4 +219,29 @@ test('admin unpublishing a resource removes it from the public page', async ({ p
     await page.goto('/Resources');
 
     await expect(page.getByText('No published resources yet. Check back soon.')).toBeVisible();
+});
+
+test('a configured contact email renders as a mailto link', async ({ page }) => {
+    await page.route('http://localhost:5000/api/settings/public', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ hubName: 'The Bridge', contactEmail: 'hub@example.com' }) })
+    );
+    await page.route('http://localhost:5000/api/resources/public', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+
+    await page.goto('/Resources');
+
+    const link = page.getByRole('link', { name: 'hub@example.com' });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', 'mailto:hub@example.com');
+});
+
+test('no configured contact email shows no contact line', async ({ page }) => {
+    await page.route('http://localhost:5000/api/resources/public', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+
+    await page.goto('/Resources');
+
+    await expect(page.getByText('Questions?')).not.toBeVisible();
 });

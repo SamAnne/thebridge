@@ -32,6 +32,14 @@ router.get('/', requireRole(Role.Admin, Role.Counselor), async (req: Request, re
     res.json(settings);
 });
 
+// Public, unauthenticated: only the fields relevant to a public visitor
+// (hub identity + a contact channel). defaultCounty/acceptingSubmissions
+// aren't public-facing, so they're deliberately left out of this shape.
+router.get('/public', async (req: Request, res: Response) => {
+    const settings = await getOrCreateSettings();
+    res.json({ hubName: settings.hubName, contactEmail: settings.contactEmail });
+});
+
 router.patch('/', requireRole(Role.Admin), async (req: Request, res: Response) => {
     await getOrCreateSettings();
 

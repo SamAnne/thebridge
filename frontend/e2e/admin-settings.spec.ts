@@ -61,6 +61,31 @@ test('admin sees the settings form pre-filled with current values', async ({ pag
     await expect(page.getByLabel('Accept resource submissions')).toBeChecked();
 });
 
+test('the header brand reflects the configured hub name', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...SETTINGS, hubName: 'Mountainland Region Hub' }) })
+    );
+
+    await page.goto('/Admin/Settings');
+
+    await expect(page.getByRole('link', { name: 'Mountainland Region Hub' })).toBeVisible();
+});
+
+test('the header brand falls back to the default name if settings fail to load', async ({ page }) => {
+    await page.route('http://localhost:5000/api/me', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })
+    );
+    await page.route('http://localhost:5000/api/settings', route => route.abort());
+
+    await page.goto('/Admin/Settings');
+
+    await expect(page.getByRole('link', { name: 'The Bridge' })).toBeVisible();
+    await expect(page.getByText('Could not load settings.')).toBeVisible();
+});
+
 test('admin can edit and save settings', async ({ page }) => {
     await page.route('http://localhost:5000/api/me', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, email: 'admin@example.com', role: 'admin' }) })

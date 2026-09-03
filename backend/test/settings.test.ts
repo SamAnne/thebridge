@@ -35,6 +35,15 @@ test('GET /api/settings requires authentication, allows admin and counselor', as
     assert.equal(typeof asCounselor.body.acceptingSubmissions, 'boolean');
 });
 
+test('GET /api/settings/public requires no authentication and returns only hubName/contactEmail', async () => {
+    const res = await request(app).get('/api/settings/public');
+    assert.equal(res.status, 200);
+    assert.equal(typeof res.body.hubName, 'string');
+    assert.equal(typeof res.body.contactEmail, 'string');
+    assert.equal(res.body.defaultCounty, undefined);
+    assert.equal(res.body.acceptingSubmissions, undefined);
+});
+
 test('PATCH /api/settings is admin-only', async () => {
     const asCounselor = await counselorAgent.patch('/api/settings').send({ hubName: 'Hacked Hub' });
     assert.equal(asCounselor.body.error, 'Not allowed with current role.');

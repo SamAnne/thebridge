@@ -226,6 +226,16 @@
     margin-bottom: 16px;
 }
 
+.alert-success {
+    background: rgba(39, 93, 56, 0.1);
+    color: var(--uvu-green-dark);
+    border: 1px solid rgba(39, 93, 56, 0.25);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
 .role-pill {
     display: inline-block;
     padding: 3px 12px;

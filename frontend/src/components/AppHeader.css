@@ -78,6 +78,32 @@
     margin-left: auto;
 }
 
+.app-header__icon-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    color: #55534f;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-header__icon-link:hover {
+    background: rgba(39, 93, 56, 0.08);
+    color: var(--uvu-green-dark);
+}
+
+.app-header__icon-link[data-active] {
+    background: var(--uvu-green);
+    color: #fff;
+}
+
+.app-header__icon-link[data-active]:hover {
+    background: var(--uvu-green-dark);
+}
+
 .app-header__user {
     font-size: 13px;
     color: var(--uvu-silver);

@@ -30,14 +30,24 @@ export async function loader({ request }: LoaderFunctionArgs) {
     if (district) apiParams.set('district', district);
     const query = apiParams.toString();
 
+    // Fetched concurrently with the resource list - the contact email is
+    // optional page furniture, so a failure here never blocks resources
+    // from loading; it just means no contact line is shown.
+    const contactEmailPromise = fetch('http://localhost:5000/api/settings/public')
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => (typeof data?.contactEmail === 'string' ? data.contactEmail : ''))
+        .catch(() => '');
+
     try {
         const response = await fetch(`http://localhost:5000/api/resources/public${query ? `?${query}` : ''}`);
+        const contactEmail = await contactEmailPromise;
         if (!response.ok) {
-            return { resources: [] as PublicResource[], error: 'Could not load resources.', filtered: Boolean(query) };
+            return { resources: [] as PublicResource[], error: 'Could not load resources.', filtered: Boolean(query), contactEmail };
         }
         const data = await response.json();
-        return { resources: data as PublicResource[], error: null, filtered: Boolean(query) };
+        return { resources: data as PublicResource[], error: null, filtered: Boolean(query), contactEmail };
     } catch {
-        return { resources: [] as PublicResource[], error: 'Could not load resources.', filtered: Boolean(query) };
+        const contactEmail = await contactEmailPromise;
+        return { resources: [] as PublicResource[], error: 'Could not load resources.', filtered: Boolean(query), contactEmail };
     }
 }

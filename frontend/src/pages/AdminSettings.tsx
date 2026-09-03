@@ -88,7 +88,7 @@ function AdminSettings() {
     return (
         <>
             <AppHeader user={currentUser} onLogout={handleLogout} />
-            <div className="page">
+            <div className="page admin-settings__page">
                 <div className="page__header">
                     <div>
                         <h1 className="page__title">Platform Settings</h1>
@@ -99,47 +99,56 @@ function AdminSettings() {
                 {loadError && <p className="alert-error">{loadError}</p>}
 
                 {!loadError && (
-                    <div className="card admin-settings__card">
+                    <div className="admin-settings__content">
                         <form onSubmit={handleSave} noValidate>
-                            <div className="field">
-                                <label htmlFor="hubName">Hub name</label>
-                                <input
-                                    id="hubName"
-                                    type="text"
-                                    value={form.hubName}
-                                    onChange={e => setForm(f => ({ ...f, hubName: e.target.value }))}
-                                    required
-                                />
+                            <div className="card admin-settings__section">
+                                <h2 className="admin-settings__section-title">Hub information</h2>
+                                <div className="field">
+                                    <label htmlFor="hubName">Hub name</label>
+                                    <input
+                                        id="hubName"
+                                        type="text"
+                                        value={form.hubName}
+                                        onChange={e => setForm(f => ({ ...f, hubName: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="contactEmail">Contact email</label>
+                                    <input
+                                        id="contactEmail"
+                                        type="email"
+                                        value={form.contactEmail}
+                                        onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="defaultCounty">Default county</label>
+                                    <input
+                                        id="defaultCounty"
+                                        type="text"
+                                        value={form.defaultCounty}
+                                        onChange={e => setForm(f => ({ ...f, defaultCounty: e.target.value }))}
+                                        placeholder="e.g. Utah"
+                                    />
+                                </div>
                             </div>
-                            <div className="field">
-                                <label htmlFor="contactEmail">Contact email</label>
-                                <input
-                                    id="contactEmail"
-                                    type="email"
-                                    value={form.contactEmail}
-                                    onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))}
-                                    required
-                                />
-                            </div>
-                            <div className="field">
-                                <label htmlFor="defaultCounty">Default county</label>
-                                <input
-                                    id="defaultCounty"
-                                    type="text"
-                                    value={form.defaultCounty}
-                                    onChange={e => setForm(f => ({ ...f, defaultCounty: e.target.value }))}
-                                    placeholder="e.g. Utah"
-                                />
-                            </div>
-                            <div className="field">
-                                <label htmlFor="acceptingSubmissions" className="admin-settings__toggle-label">
+
+                            <div className="card admin-settings__section">
+                                <h2 className="admin-settings__section-title">Resource submissions</h2>
+                                <label className="toggle" htmlFor="acceptingSubmissions">
                                     <input
                                         id="acceptingSubmissions"
                                         type="checkbox"
+                                        className="toggle__input"
                                         checked={form.acceptingSubmissions}
                                         onChange={e => setForm(f => ({ ...f, acceptingSubmissions: e.target.checked }))}
                                     />
-                                    Accept resource submissions
+                                    <span className="toggle__track" aria-hidden="true">
+                                        <span className="toggle__thumb"></span>
+                                    </span>
+                                    <span className="toggle__label-text">Accept resource submissions</span>
                                 </label>
                                 <p className="admin-settings__toggle-hint">
                                     When turned off, counselors cannot submit new resources until it's turned back on.
@@ -147,7 +156,7 @@ function AdminSettings() {
                             </div>
 
                             {saveError && <p className="alert-error">{saveError}</p>}
-                            {saved && !saveError && <p className="admin-settings__saved">Settings saved.</p>}
+                            {saved && !saveError && <p className="alert-success">Settings saved.</p>}
 
                             <button className="btn btn--primary" type="submit" disabled={saving}>
                                 {saving ? 'Saving…' : 'Save changes'}

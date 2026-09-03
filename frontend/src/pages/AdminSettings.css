@@ -1,27 +1,114 @@
-.admin-settings__card {
-    max-width: 480px;
+/* Overrides the shared .page max-width (1280px) so this page's content
+   uses more of the available desktop width, per the same-container
+   alignment shared by the heading and the cards. Higher specificity than
+   .page alone (two classes vs. one) so it wins regardless of CSS import
+   order. */
+.admin-settings__page.page {
+    max-width: 1440px;
 }
 
-.admin-settings__toggle-label {
+.admin-settings__content form {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
+    flex-direction: column;
+    gap: 20px;
 }
 
-.admin-settings__toggle-label input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+.admin-settings__content form > button {
+    align-self: flex-start;
+}
+
+.admin-settings__section {
+    text-align: left;
+    padding: 22px 24px;
+}
+
+.admin-settings__section .field {
+    margin-bottom: 12px;
+}
+
+.admin-settings__section .field:last-child {
+    margin-bottom: 0;
+}
+
+.admin-settings__section-title {
+    margin: 0 0 14px;
+    font-family: var(--heading-font);
+    font-weight: 600;
+    font-size: 17px;
+    color: #1a1a1a;
 }
 
 .admin-settings__toggle-hint {
-    margin: 4px 0 0;
+    margin: 10px 0 0;
     font-size: 12px;
     color: var(--uvu-silver);
 }
 
-.admin-settings__saved {
-    margin: 0 0 16px;
+/* Accessible toggle switch: the real checkbox stays in the DOM, focusable,
+   and is the actual click target (opacity:0, positioned exactly over the
+   track) rather than display:none or clipped-to-1px, either of which
+   would remove it from the accessibility tree/tab order or make it
+   unclickable under its own decorative track. The track+thumb are purely
+   decorative (pointer-events: none) and just reflect the checkbox's state
+   via sibling selectors. */
+.toggle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.toggle__input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 22px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.toggle__track {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+    background: var(--uvu-grey);
+    border-radius: var(--radius-pill);
+    transition: background 0.15s ease;
+    pointer-events: none;
+}
+
+.toggle__thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.15s ease;
+}
+
+.toggle__input:checked + .toggle__track {
+    background: var(--uvu-green);
+}
+
+.toggle__input:checked + .toggle__track .toggle__thumb {
+    transform: translateX(18px);
+}
+
+.toggle__input:focus-visible + .toggle__track {
+    outline: 2px solid var(--uvu-green);
+    outline-offset: 2px;
+}
+
+.toggle__label-text {
     font-size: 14px;
-    color: var(--uvu-green-dark);
+    font-weight: 600;
+    color: #444;
 }
