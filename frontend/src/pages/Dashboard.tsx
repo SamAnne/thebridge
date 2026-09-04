@@ -1,18 +1,30 @@
 import { useState, useRef, useEffect } from "react"
-import { useLoaderData, Link, useNavigate } from 'react-router-dom';
-import { requireRole, logout } from '../lib/auth';
+import { useLoaderData, useNavigate, redirect } from 'react-router-dom';
+import { logout } from '../lib/auth';
+import AppHeader from '../components/AppHeader';
 import './Dashboard.css';
 
+// /api/me and /api/resources/unseen are fetched concurrently. Unlike the
+// other admin pages, /api/me stays the authoritative check here: Dashboard
+// is legitimately shared by two roles, and the unseen-queue endpoint
+// rejecting a counselor is expected, not a sign they should be logged out.
+// The counselor's "wasted" parallel call to an admin-only endpoint is
+// rejected by a single fast DB check, so it costs them no real time.
 export async function loader(){
-    const user = await requireRole('admin', 'counselor');
-    if (user.role === 'admin'){
-        const response = await fetch('http://localhost:5000/api/resources/unseen', {
-            credentials: 'include'
-        });
-        const resources = await response.json();
-        return [user, resources];
+    const [meResult, resourcesResult] = await Promise.all([
+        fetch('http://localhost:5000/api/me', { credentials: 'include' }).then(r => r.json()).catch(() => null),
+        fetch('http://localhost:5000/api/resources/unseen', { credentials: 'include' }).then(r => r.json()).catch(() => null),
+    ]);
+
+    if (!meResult || meResult.error || !['admin', 'counselor'].includes(meResult.role)) {
+        throw redirect('/Login');
     }
-    return [user, null];
+
+    if (meResult.role === 'admin'){
+        const resources = Array.isArray(resourcesResult) ? resourcesResult : [];
+        return [meResult, resources];
+    }
+    return [meResult, null];
 };
 
 
@@ -21,9 +33,9 @@ function DocumentPreview({ name, url }: { name: string, url: string } ){
     const isPdf = name ? name.toLowerCase().endsWith('.pdf') : '';
 
     return (
-        <div style={{ marginTop: '1.5rem', border: '1px solid #ccc', borderRadius: '8px', padding: '1rem' }}>
+        <div className="resource-card__preview">
         <h4>Document Preview: {name}</h4>
-        
+
         {/* this only works if the user has their browser settings as display files instead of downloading them */}
         {isPdf ? (
             <iframe
@@ -50,7 +62,7 @@ function FileRowItem({ name, url }: { name: string, url: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className="resource-card__file-row">
       <button type="button" className="file-preview-link" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? 'Hide' : '▶ Preview'} {name}
       </button>
@@ -59,7 +71,11 @@ function FileRowItem({ name, url }: { name: string, url: string }) {
   );
 }
 
-
+function truncate(text: string, max = 90) {
+    if (!text) return 'No description provided';
+    if (text.length <= max) return text;
+    return text.slice(0, max).trimEnd() + '…';
+}
 
 // placeholder
 function Dashboard() {
@@ -91,7 +107,11 @@ function Dashboard() {
     const [user, setUser] = useState<User>(items[0]);
     const [unseenResources, setUnseenResources] = useState<Resource[] | null>(items[1]);
     const descriptionVal = useRef<HTMLInputElement>(null);
-    const noteVal = useRef<HTMLInputElement>(null);
+    // One note input per rendered card, keyed by resource id - a single
+    // shared ref here would only ever point at the last-rendered card's
+    // input, so a note typed on one resource could get submitted for
+    // whichever resource's Approve/Reject/Revision button was clicked.
+    const noteRefs = useRef<Map<number, HTMLInputElement>>(new Map());
     const fileVal = useRef<HTMLInputElement>(null);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -103,7 +123,7 @@ function Dashboard() {
 
     async function postStatus(status: string, id: number) {
         try {
-            const note = noteVal.current?.value;
+            const note = noteRefs.current.get(id)?.value;
             await fetch('http://localhost:5000/api/resources/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -111,7 +131,7 @@ function Dashboard() {
                 body: JSON.stringify({ id, status, note }),
             });
             setUnseenResources(prevItems => (prevItems || []).filter(item => item.id !== id));
-        } 
+        }
         catch(err){
             setError('Could not set status of resource.')
         }
@@ -128,10 +148,10 @@ function Dashboard() {
             if (files){
                 for (const file of Array.from(files)) {
                     const allowedTypes = [
-                    'application/pdf', 
+                    'application/pdf',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
                     ];
-                    
+
                     if (!allowedTypes.includes(file.type)) {
                         setError('File type not allowed');
                         return;
@@ -143,7 +163,7 @@ function Dashboard() {
             await fetch('http://localhost:5000/api/resources', {
                 method: 'POST',
                 credentials: 'include',
-                body: formData, 
+                body: formData,
             });
             console.log('added resource');
             alert('Successfully added resource!');
@@ -152,31 +172,28 @@ function Dashboard() {
             setError('Could not add resource');
         }
     }
-    
+
 
     useEffect(() => {
         setUser(items[0]);
         setUnseenResources(items[1]);
     }, [items]);
-    
-    
+
+
     return (
-    <div className="page">
+    <>
+        {user && <AppHeader user={{ email: user.email, role: user.role ?? '' }} onLogout={handleLogout} />}
+        <div className="page">
         {/* when signing up, check email for the domain and add appropriate role depending on if the domain is one of the districts, otherwise public role selected (student/parent) */}
         {user && (
             <div className="page__header">
                 <div>
-                    <p className="page__eyebrow">The Bridge</p>
                     <h1 className="page__title">Dashboard</h1>
-                    <p className="dashboard__greeting">
-                        {user.email} <span className={`role-pill role-pill--${user.role}`}>{user.role}</span>
+                    <p className="page__subtitle">
+                        {user.role === 'admin'
+                            ? 'Review submitted resources awaiting approval.'
+                            : 'Submit resources for review.'}
                     </p>
-                </div>
-                <div className="page__header-actions">
-                    {user.role === 'admin' && (
-                        <Link className="btn btn--outline btn--small" to="/Admin/Users">Registered Users</Link>
-                    )}
-                    <button className="btn btn--outline btn--small" onClick={handleLogout}>Logout</button>
                 </div>
             </div>
         )}
@@ -188,27 +205,38 @@ function Dashboard() {
             <div>
                 <div className="dashboard__section-header">
                     <h4>Review Queue</h4>
+                    {unseenResources && unseenResources.length > 0 && (
+                        <span className="dashboard__queue-count">{unseenResources.length} pending</span>
+                    )}
                 </div>
-                {unseenResources?.length === 0 && <p>No resources in review queue currently.</p>}
-                <div className="resource-grid">
-                    {unseenResources && unseenResources.map((resource, index) =>
+                {unseenResources?.length === 0 && <p className="empty-state">No resources in review queue currently.</p>}
+                <div className="resource-list">
+                    {unseenResources && unseenResources.map((resource) =>
                     (
                         <div className="card resource-card" key={resource.id}>
-                            <h4>Resource {index}</h4>
-                            <p>{resource.description}</p>
-                            <div>{resource.files.map((file, index) => (
-                                <FileRowItem key={index} name={file.fileName} url={file.url} />
-                            )
+                            <p className="resource-card__description">{truncate(resource.description)}</p>
+                            {resource.files.length > 0 && (
+                                <div className="resource-card__files">{resource.files.map((file, index) => (
+                                    <FileRowItem key={index} name={file.fileName} url={file.url} />
+                                )
+                                )}
+                                </div>
                             )}
-                            </div>
-                            <span className="resource-card__date">{new Date(resource.date).toLocaleString()}</span>
+                            <span className="resource-card__date">Submitted {new Date(resource.date).toLocaleString()}</span>
                             <div className="resource-card__note">
-                                <input type="text" ref={noteVal} placeholder="Notes ..."></input>
+                                <input
+                                    type="text"
+                                    ref={el => {
+                                        if (el) noteRefs.current.set(resource.id, el);
+                                        else noteRefs.current.delete(resource.id);
+                                    }}
+                                    placeholder="Notes for the submitter (optional)"
+                                ></input>
                             </div>
                             <div className="resource-card__actions">
                                 <button className="btn btn--primary btn--small" onClick={() => postStatus('approved', resource.id)}>Approve</button>
-                                <button className="btn btn--outline btn--small" onClick={() => postStatus('rejected', resource.id)}>Reject</button>
                                 <button className="btn btn--outline btn--small" onClick={() => postStatus('revision', resource.id)}>Revision Needed</button>
+                                <button className="btn btn--danger-outline btn--small" onClick={() => postStatus('rejected', resource.id)}>Reject</button>
                             </div>
                         </div>
                     )
@@ -252,7 +280,8 @@ function Dashboard() {
             // add all of user resources? with notes and status
         )}
 
-    </div>
+        </div>
+    </>
     )
 }
 

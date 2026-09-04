@@ -1,0 +1,98 @@
+.public-resources__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+/* Fixed card height so opening a PDF preview can never grow the card (or
+   push other cards in the grid out of alignment) - the files/preview
+   section below is the only part allowed to flex, and it scrolls
+   internally instead. */
+.public-resources__card {
+    display: flex;
+    flex-direction: column;
+    height: 380px;
+    overflow: hidden;
+    text-align: left;
+}
+
+.public-resources__description {
+    flex-shrink: 0;
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: #1a1a1a;
+    line-height: 1.5;
+}
+
+.public-resources__tags {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+}
+
+.public-resources__files {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: 10px;
+    margin-bottom: 12px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+
+.public-resources__file {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.public-resources__file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.public-resources__files a {
+    color: var(--uvu-green);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.public-resources__files a:hover {
+    text-decoration: underline;
+}
+
+.public-resources__preview-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--uvu-silver);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.public-resources__preview-toggle:hover {
+    color: var(--uvu-green);
+}
+
+.public-resources__preview-frame {
+    width: 100%;
+    height: 200px;
+    flex-shrink: 0;
+    border: 1px solid var(--uvu-grey);
+    border-radius: var(--radius-sm);
+}
+
+.public-resources__date {
+    flex-shrink: 0;
+    /* anchors to the bottom of the fixed-height card even when a resource
+       has no files (so the files block, which normally does this via
+       flex:1, isn't rendered at all) */
+    margin: auto 0 0;
+    font-size: 12px;
+    color: var(--uvu-silver);
+}

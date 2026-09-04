@@ -3,10 +3,11 @@ import { Request, Response, NextFunction } from 'express';
 import Role from '../models/role';
 import { prisma } from '../db/connection';
 
-// Verifies the JWT, then re-fetches the user's *current* role from the
-// database rather than trusting the role baked into the token - a token
-// stays valid for up to a day, so without this a role change or a
-// disabled account wouldn't take effect until the old token expired.
+// Verifies the JWT, then re-fetches the user's *current* role and active
+// status from the database rather than trusting the role baked into the
+// token - a token stays valid for up to a day, so without this a role
+// change or a disabled account wouldn't take effect until the old token
+// expired.
 async function authenticate(req: Request): Promise<{ id: number; email: string; role: string } | null> {
     const token = req.cookies.token;
     if (!token) return null;
@@ -16,7 +17,7 @@ async function authenticate(req: Request): Promise<{ id: number; email: string; 
         where: { id: decoded.id },
         include: { role: true }
     });
-    if (!user) return null;
+    if (!user || !user.active) return null;
 
     return { id: user.id, email: user.email, role: user.role.role };
 }
@@ -25,6 +26,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     authenticate(req)
         .then(user => {
             if (!user) {
+                res.clearCookie('token');
                 console.log('cant find user');
                 return res.json({ error: 'Could not authorize user.' });
             }
@@ -43,6 +45,7 @@ export function requireRole(...allowedRoles: Role[]) {
         authenticate(req)
             .then(user => {
                 if (!user) {
+                    res.clearCookie('token');
                     console.log('cant find user role');
                     return res.json({ error: 'Could not authorize role of user.' });
                 }

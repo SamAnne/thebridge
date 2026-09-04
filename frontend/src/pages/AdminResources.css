@@ -1,0 +1,116 @@
+.admin-resources__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-resources__card {
+    text-align: left;
+    padding: 16px 20px;
+}
+
+.admin-resources__top-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.admin-resources__meta {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--uvu-silver);
+}
+
+.admin-resources__description {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #1a1a1a;
+    line-height: 1.5;
+}
+
+.admin-resources__scope,
+.admin-resources__files {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0 0 6px;
+    font-size: 13px;
+}
+
+.admin-resources__scope-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    color: var(--uvu-silver);
+    margin-right: 2px;
+}
+
+.admin-resources__scope-label:not(:first-child) {
+    margin-left: 10px;
+}
+
+.admin-resources__files a {
+    margin-right: 4px;
+    color: var(--uvu-green);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.admin-resources__files a:hover {
+    text-decoration: underline;
+}
+
+.admin-resources__muted {
+    color: var(--uvu-silver);
+}
+
+.admin-resources__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.admin-resources__confirm {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--uvu-error);
+}
+
+.admin-resources__hint {
+    font-size: 12px;
+}
+
+.admin-resources__inline-error {
+    margin: 10px 0 0;
+}
+
+.admin-resources__edit-textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.admin-resources__edit-textarea:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: var(--focus-ring);
+}
+
+.admin-resources__edit-input {
+    box-sizing: border-box;
+}

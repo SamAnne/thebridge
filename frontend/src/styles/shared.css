@@ -16,6 +16,14 @@
     text-align: center;
 }
 
+/* #root is a column flexbox (see index.css) - auto top/bottom margins on a
+   flex item center it along that axis, so this centers the page vertically
+   in the viewport without affecting any other route's layout. */
+.page--vcentered {
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
 .page__eyebrow {
     margin: 0 0 4px;
     font-size: 13px;
@@ -43,7 +51,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 28px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
     gap: 12px;
 }
@@ -56,8 +64,8 @@
 .card {
     background: #fff;
     border: 1px solid var(--uvu-grey);
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(39, 93, 56, 0.06);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
     padding: 28px;
 }
 
@@ -67,16 +75,17 @@
     justify-content: center;
     gap: 6px;
     padding: 10px 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid transparent;
     font-size: 14px;
     font-weight: 600;
     font-family: var(--heading-font);
     cursor: pointer;
     text-decoration: none;
-    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
+/* primary - the one important positive action on a screen */
 .btn--primary {
     background: var(--uvu-green);
     color: #fff;
@@ -86,6 +95,7 @@
     background: var(--uvu-green-dark);
 }
 
+/* secondary - ordinary navigation/action, visible but not the main CTA */
 .btn--outline {
     background: #fff;
     color: #333;
@@ -97,9 +107,52 @@
     background: var(--uvu-grey-light);
 }
 
+/* danger - a destructive/irreversible action, reserved for the actual
+   confirm step (e.g. "Yes, unpublish") */
+.btn--danger {
+    background: var(--uvu-error);
+    color: #fff;
+}
+
+.btn--danger:hover {
+    background: #8f1e18;
+}
+
+/* danger-outline - a negative workflow decision (e.g. Reject) that's
+   meaningfully different from routine navigation but isn't the same class
+   of irreversible action as .btn--danger */
+.btn--danger-outline {
+    background: #fff;
+    color: var(--uvu-error);
+    border-color: rgba(179, 38, 30, 0.35);
+}
+
+.btn--danger-outline:hover {
+    background: var(--uvu-error-bg);
+    border-color: var(--uvu-error);
+}
+
+/* ghost - lowest-emphasis utility action (Logout, dismiss) - visible on
+   focus/hover but doesn't compete with real navigation or primary actions */
+.btn--ghost {
+    background: transparent;
+    color: var(--uvu-silver);
+    border-color: transparent;
+}
+
+.btn--ghost:hover {
+    background: var(--uvu-grey-light);
+    color: #333;
+}
+
 .btn--small {
     padding: 6px 14px;
     font-size: 13px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .field {
@@ -122,7 +175,7 @@
 .field input[type="file"] {
     padding: 10px 12px;
     border: 1px solid var(--uvu-grey);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     font-family: inherit;
 }
@@ -132,7 +185,7 @@
 .field input[type="text"]:focus {
     outline: none;
     border-color: var(--uvu-green);
-    box-shadow: 0 0 0 3px rgba(39, 93, 56, 0.12);
+    box-shadow: var(--focus-ring);
 }
 
 .password-input {
@@ -167,7 +220,7 @@
     background: var(--uvu-error-bg);
     color: var(--uvu-error);
     border: 1px solid rgba(179, 38, 30, 0.25);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 10px 14px;
     font-size: 14px;
     margin-bottom: 16px;
@@ -176,7 +229,7 @@
 .role-pill {
     display: inline-block;
     padding: 3px 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.3px;
@@ -196,4 +249,96 @@
 .role-pill--student {
     background: #f0f0f0;
     color: #555;
+}
+
+/* Review-status vs. publication-state badges deliberately use different
+   pill treatments (light tint vs. solid fill) so the two concepts never
+   read as the same thing. */
+.review-status-pill,
+.publication-pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.review-status-pill--unseen {
+    background: #f0f0f0;
+    color: #555;
+}
+
+.review-status-pill--approved {
+    background: rgba(39, 93, 56, 0.12);
+    color: var(--uvu-green-dark);
+}
+
+.review-status-pill--rejected {
+    background: var(--uvu-error-bg);
+    color: var(--uvu-error);
+}
+
+.review-status-pill--revision {
+    background: rgba(181, 101, 29, 0.12);
+    color: #8a4b12;
+}
+
+.publication-pill--published {
+    background: var(--uvu-green);
+    color: #fff;
+}
+
+.publication-pill--unpublished {
+    background: #fff;
+    color: var(--uvu-silver);
+    border: 1px solid var(--uvu-grey);
+}
+
+.tag-pill {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    background: var(--uvu-grey-light);
+    border: 1px solid var(--uvu-grey);
+    color: #444;
+}
+
+/* Shared search/filter toolbar, used by every page that lists+filters data */
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.input,
+.select {
+    padding: 10px 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: #fff;
+}
+
+.input {
+    flex: 1;
+    min-width: 240px;
+}
+
+.input:focus,
+.select:focus {
+    outline: none;
+    border-color: var(--uvu-green);
+    box-shadow: var(--focus-ring);
+}
+
+.empty-state {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--uvu-silver);
 }

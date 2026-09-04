@@ -1,49 +1,71 @@
-.dashboard__greeting {
-    margin: 0;
-    font-size: 15px;
-    color: var(--uvu-silver);
-}
-
 .dashboard__section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .dashboard__section-header h4 {
     margin: 0;
     font-family: var(--heading-font);
-    font-size: 20px;
+    font-size: 18px;
     color: #1a1a1a;
 }
 
-.resource-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-    gap: 16px;
+.dashboard__queue-count {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--uvu-silver);
+}
+
+.resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .resource-card {
+    padding: 16px 20px;
     margin-bottom: 0;
 }
 
-.resource-card h4 {
-    margin: 0 0 4px;
-    font-family: var(--heading-font);
-    font-size: 16px;
+.resource-card__description {
+    margin: 0 0 6px;
+    font-size: 14px;
     color: #1a1a1a;
+    line-height: 1.5;
+}
+
+.resource-card__files {
+    margin-bottom: 8px;
+}
+
+.resource-card__file-row {
+    margin-bottom: 4px;
+}
+
+.resource-card__preview {
+    margin-top: 12px;
+    border: 1px solid var(--uvu-grey);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+}
+
+.resource-card__preview h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
 }
 
 .resource-card__date {
     display: block;
     font-size: 12px;
     color: var(--uvu-silver);
-    margin: 4px 0 12px;
+    margin: 0 0 10px;
 }
 
 .resource-card__note {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .resource-card__note input {
@@ -51,7 +73,7 @@
     max-width: 320px;
     padding: 8px 10px;
     border: 1px solid var(--uvu-grey);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-size: 14px;
     box-sizing: border-box;
 }
@@ -68,7 +90,7 @@
     padding: 0;
     color: var(--uvu-green);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     cursor: pointer;
     text-decoration: none;
 }
