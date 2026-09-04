@@ -4,27 +4,36 @@ import { logout } from '../lib/auth';
 import AppHeader from '../components/AppHeader';
 import './Dashboard.css';
 
-// /api/me and /api/resources/unseen are fetched concurrently. Unlike the
-// other admin pages, /api/me stays the authoritative check here: Dashboard
-// is legitimately shared by two roles, and the unseen-queue endpoint
-// rejecting a counselor is expected, not a sign they should be logged out.
-// The counselor's "wasted" parallel call to an admin-only endpoint is
-// rejected by a single fast DB check, so it costs them no real time.
+// /api/me, /api/resources/unseen, and /api/settings are fetched
+// concurrently. Unlike the other admin pages, /api/me stays the
+// authoritative check here: Dashboard is legitimately shared by two roles,
+// and the unseen-queue endpoint rejecting a counselor is expected, not a
+// sign they should be logged out. The "wasted" parallel calls to
+// admin-only/role-gated endpoints are rejected by a single fast DB check,
+// so they cost no real time either way.
 export async function loader(){
-    const [meResult, resourcesResult] = await Promise.all([
+    const [meResult, resourcesResult, settingsResult] = await Promise.all([
         fetch('http://localhost:5000/api/me', { credentials: 'include' }).then(r => r.json()).catch(() => null),
         fetch('http://localhost:5000/api/resources/unseen', { credentials: 'include' }).then(r => r.json()).catch(() => null),
+        fetch('http://localhost:5000/api/settings', { credentials: 'include' }).then(r => r.json()).catch(() => null),
     ]);
 
     if (!meResult || meResult.error || !['admin', 'counselor'].includes(meResult.role)) {
         throw redirect('/Login');
     }
 
+    // Defaults to accepting submissions if settings couldn't be loaded -
+    // this only affects what the counselor form shows; the real gate is
+    // enforced server-side in POST /api/resources regardless.
+    const acceptingSubmissions = settingsResult && typeof settingsResult.acceptingSubmissions === 'boolean'
+        ? settingsResult.acceptingSubmissions
+        : true;
+
     if (meResult.role === 'admin'){
         const resources = Array.isArray(resourcesResult) ? resourcesResult : [];
-        return [meResult, resources];
+        return [meResult, resources, acceptingSubmissions];
     }
-    return [meResult, null];
+    return [meResult, null, acceptingSubmissions];
 };
 
 
@@ -106,6 +115,7 @@ function Dashboard() {
     const items = useLoaderData() as any[]
     const [user, setUser] = useState<User>(items[0]);
     const [unseenResources, setUnseenResources] = useState<Resource[] | null>(items[1]);
+    const [acceptingSubmissions, setAcceptingSubmissions] = useState<boolean>(items[2]);
     const descriptionVal = useRef<HTMLInputElement>(null);
     // One note input per rendered card, keyed by resource id - a single
     // shared ref here would only ever point at the last-rendered card's
@@ -160,12 +170,16 @@ function Dashboard() {
                 }
             }
 
-            await fetch('http://localhost:5000/api/resources', {
+            const response = await fetch('http://localhost:5000/api/resources', {
                 method: 'POST',
                 credentials: 'include',
                 body: formData,
             });
-            console.log('added resource');
+            const data = await response.json().catch(() => null);
+            if (!response.ok || (data && data.error)) {
+                setError(data?.error || 'Could not add resource');
+                return;
+            }
             alert('Successfully added resource!');
         }
         catch (error) {
@@ -177,6 +191,7 @@ function Dashboard() {
     useEffect(() => {
         setUser(items[0]);
         setUnseenResources(items[1]);
+        setAcceptingSubmissions(items[2]);
     }, [items]);
 
 
@@ -250,32 +265,36 @@ function Dashboard() {
             //submitting resources
             <div className="card">
                 <h5>Submit a Resource</h5>
-                <form onSubmit={postResource}>
-                    <div className="field">
-                        <label htmlFor="description">Description</label>
-                        <input
-                            id="description"
-                            type='text'
-                            ref={descriptionVal}
-                            placeholder="Description goes here"
-                            required
-                        >
-                        </input>
-                    </div>
-                    <div className="field">
-                        <label htmlFor="files">Select file/s</label>
-                        <input
-                            id="files"
-                            type="file"
-                            accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                            multiple
-                            ref={fileVal}
-                        >
-                        </input>
-                    </div>
-                    {error.length > 0 && (<p className="alert-error">{error}</p>)}
-                    <button className="btn btn--primary" type='submit'>Submit Resource</button>
-                </form>
+                {acceptingSubmissions ? (
+                    <form onSubmit={postResource}>
+                        <div className="field">
+                            <label htmlFor="description">Description</label>
+                            <input
+                                id="description"
+                                type='text'
+                                ref={descriptionVal}
+                                placeholder="Description goes here"
+                                required
+                            >
+                            </input>
+                        </div>
+                        <div className="field">
+                            <label htmlFor="files">Select file/s</label>
+                            <input
+                                id="files"
+                                type="file"
+                                accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                multiple
+                                ref={fileVal}
+                            >
+                            </input>
+                        </div>
+                        {error.length > 0 && (<p className="alert-error">{error}</p>)}
+                        <button className="btn btn--primary" type='submit'>Submit Resource</button>
+                    </form>
+                ) : (
+                    <p className="empty-state">Submissions are currently closed. Please check back later.</p>
+                )}
             </div>
             // add all of user resources? with notes and status
         )}

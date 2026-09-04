@@ -8,6 +8,8 @@ import AdminResources from './pages/AdminResources'
 import { loader as adminResourcesLoader } from './pages/AdminResources.loader'
 import PublicResources from './pages/PublicResources'
 import { loader as publicResourcesLoader } from './pages/PublicResources.loader'
+import AdminSettings from './pages/AdminSettings'
+import { loader as adminSettingsLoader } from './pages/AdminSettings.loader'
 import NavigationProgress from './components/NavigationProgress'
 import './App.css'
 
@@ -29,6 +31,7 @@ const router = createBrowserRouter(
         <Route path="/Dashboard" element={<Dashboard/>} loader={dashboardLoader}/>
         <Route path="/Admin/Users" element={<AdminUsers/>} loader={adminUsersLoader}/>
         <Route path="/Admin/Resources" element={<AdminResources/>} loader={adminResourcesLoader}/>
+        <Route path="/Admin/Settings" element={<AdminSettings/>} loader={adminSettingsLoader}/>
       </Route>
   )
 );

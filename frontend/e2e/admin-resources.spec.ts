@@ -5,6 +5,15 @@ import { test, expect } from '@playwright/test';
 // authoritative check (it re-verifies auth/role server-side), so both are
 // intercepted here even for the redirect-on-rejection tests.
 
+// AppHeader also fetches /api/settings on mount (for the hub name shown in
+// the brand link) - stubbed for every test here so the suite stays hermetic
+// instead of falling through to a live backend.
+test.beforeEach(async ({ page }) => {
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: '', defaultCounty: null, acceptingSubmissions: true }) })
+    );
+});
+
 const BASE_RESOURCE = {
     id: 1,
     description: 'A guide to FAFSA deadlines for the upcoming school year.',

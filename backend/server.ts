@@ -5,6 +5,7 @@ import loginRouter from './routes/login';
 import logoutRouter from './routes/logout';
 import resourcesRouter from './routes/resources';
 import usersRouter from './routes/users';
+import settingsRouter from './routes/settings';
 import cors from 'cors';
 
 const express = require('express');
@@ -41,6 +42,7 @@ app.use('/login', loginRouter);
 app.use('/logout', logoutRouter);
 app.use('/api/resources', resourcesRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/settings', settingsRouter)
 
 if (require.main === module) {
     const PORT = process.env.PORT || 5000;

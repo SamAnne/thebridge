@@ -7,6 +7,9 @@ test('clicking Logout on the Dashboard calls /logout and redirects to /Login', a
     await page.route('http://localhost:5000/api/resources/unseen', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Not allowed with current role.' }) })
     );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: 'hub@example.com', defaultCounty: null, acceptingSubmissions: true }) })
+    );
     let logoutCalled = false;
     await page.route('http://localhost:5000/logout', route => {
         logoutCalled = true;
@@ -26,6 +29,9 @@ test('clicking Logout on the Admin Users page also redirects to /Login', async (
     );
     await page.route('http://localhost:5000/api/users', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+    );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: '', defaultCounty: null, acceptingSubmissions: true }) })
     );
     await page.route('http://localhost:5000/logout', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) })

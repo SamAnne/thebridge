@@ -3,6 +3,7 @@ import { supabase } from '../db/supabaseClient';
 import { prisma } from '../db/connection';
 import express, { Request, Response, NextFunction } from 'express';
 import { requireRole } from '../routes/roles';
+import { getOrCreateSettings } from '../routes/settings';
 import Role from '../models/role';
 const router = express.Router();
 
@@ -10,6 +11,11 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.post('/', requireRole(Role.Admin, Role.Counselor), upload.array('files', 10), async (req: Request, res: Response) => {
     try {
+        const settings = await getOrCreateSettings();
+        if (!settings.acceptingSubmissions) {
+            return res.status(403).json({ error: 'Resource submissions are currently closed.' });
+        }
+
         const { description } = req.body;
         const userId = (req as any).user.id;
         const files = req.files as Express.Multer.File[];

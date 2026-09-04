@@ -51,6 +51,17 @@ model Resource {
   updatedAt DateTime @updatedAt
 }
 
+// Singleton row (always id=1) holding hub-wide configuration. Kept
+// intentionally small for the MVP - just the four fields the admin
+// settings panel needs.
+model Settings {
+  id                   Int     @id @default(1)
+  hubName              String  @default("The Bridge")
+  contactEmail         String  @default("")
+  defaultCounty        String?
+  acceptingSubmissions Boolean @default(true)
+}
+
 model Event {
   id          Int      @id @default(autoincrement())
   title       String
