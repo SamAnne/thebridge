@@ -1,11 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -13,42 +8,40 @@ datasource db {
   provider = "postgresql"
 }
 
-// add district
-// get all of them and make another table
-// add district of user based on their email domain
 model User {
-  id        Int @id @default(autoincrement())
-  email     String @unique
+  id        Int        @id @default(autoincrement())
+  email     String     @unique
   password  String
   roleId    Int
-  role      Role @relation(fields: [roleId], references: [id])
-  resourses Resource[]
-  name      String?
-  district  String?
   county    String?
-  createdAt DateTime @default(now())
-  active    Boolean @default(true)
+  createdAt DateTime   @default(now())
+  district  String?
+  name      String?
+  active    Boolean    @default(true)
+  verified  Boolean    @default(false)
+  resourses Resource[]
+  role      Role       @relation(fields: [roleId], references: [id])
 }
 
 model Role {
-  id        Int @id @default(autoincrement())
-  role      String @unique
-  users     User[]
+  id    Int    @id @default(autoincrement())
+  role  String @unique
+  users User[]
 }
 
 model Resource {
-  id        Int @id @default(autoincrement())
-  userId    Int
-  user      User @relation(fields: [userId], references: [id])
-  date      DateTime @default(now())
-  status    String  // rejected, approved, revision, unseen
-  published Boolean @default(false)
-  counties  String[] @default([])
-  districts String[] @default([])
-  description  String
-  files     File[]
-  note      String
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  date        DateTime @default(now())
+  status      String
+  note        String
+  description String
+  counties    String[] @default([])
+  districts   String[] @default([])
+  published   Boolean  @default(false)
+  updatedAt   DateTime @updatedAt
+  files       File[]
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model Event {
@@ -67,8 +60,20 @@ model File {
   url        String
   fileName   String
   resourceId Int
-  resource   Resource @relation(fields: [resourceId], references: [id])
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 }
 
+model Settings {
+  id                   Int     @id @default(1)
+  hubName              String  @default("The Bridge")
+  contactEmail         String  @default("")
+  defaultCounty        String?
+  acceptingSubmissions Boolean @default(true)
+}
 
-
+model Domains {
+  id        Int      @id @default(autoincrement())
+  domain    String   @unique
+  district  String
+  county    String
+}

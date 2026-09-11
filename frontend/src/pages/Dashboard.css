@@ -98,3 +98,41 @@
 .file-preview-link:hover {
     text-decoration: underline;
 }
+
+.resource-card__status {
+    color: white;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.5rem;
+}
+
+.close-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 0.375rem;
+    border: 1px solid transparent;
+    background: transparent; 
+    color: var(--uvu-green);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: #f0fdf4;
+}
+
+.success-txt {
+    color: var(--uvu-green);
+    font-weight: 600;
+}

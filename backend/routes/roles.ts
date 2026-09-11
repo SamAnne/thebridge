@@ -13,13 +13,16 @@ async function authenticate(req: Request): Promise<{ id: number; email: string; 
     if (!token) return null;
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
-    const user = await prisma.user.findUnique({
-        where: { id: decoded.id },
-        include: { role: true }
-    });
-    if (!user || !user.active) return null;
+    if (decoded.type === 'auth') {
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.id },
+            include: { role: true }
+        });
+        if (!user || !user.active) return null;
 
-    return { id: user.id, email: user.email, role: user.role.role };
+        return { id: user.id, email: user.email, role: user.role.role };
+    }
+    else return null;
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {

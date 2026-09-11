@@ -10,6 +10,8 @@ import PublicResources from './pages/PublicResources'
 import { loader as publicResourcesLoader } from './pages/PublicResources.loader'
 import NavigationProgress from './components/NavigationProgress'
 import './App.css'
+import SignUp from './pages/SignUp'
+import Verify from './pages/Verify'
 
 function RootLayout() {
   return (
@@ -29,6 +31,8 @@ const router = createBrowserRouter(
         <Route path="/Dashboard" element={<Dashboard/>} loader={dashboardLoader}/>
         <Route path="/Admin/Users" element={<AdminUsers/>} loader={adminUsersLoader}/>
         <Route path="/Admin/Resources" element={<AdminResources/>} loader={adminResourcesLoader}/>
+        <Route path='/Signup' element={<SignUp></SignUp>}/>
+        <Route path='/Verify' element={<Verify></Verify>}/>
       </Route>
   )
 );

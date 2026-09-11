@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import request from 'supertest';
 import app from '../server';
 import { prisma } from '../db/connection';
+import { supabase } from '../db/supabaseClient';
+import jwt from 'jsonwebtoken';
 
 const ADMIN = { email: 'admin@example.com', password: 'adminpassword123' };
 const COUNSELOR = { email: 'counselor@example.com', password: 'counselorpassword123' };
@@ -47,6 +49,17 @@ async function createTestResource(overrides: Partial<{
         }
     });
 }
+
+// deletes both the DB rows and any objects this test may have pushed to the
+// real 'resources' bucket, so repeated runs don't pile up orphaned files
+async function cleanupResourceAndFiles(resourceId: number) {
+    const files = await prisma.file.findMany({ where: { resourceId } });
+    if (files.length > 0) {
+        await supabase.storage.from('resources').remove(files.map((f) => f.fileName));
+    }
+    await prisma.resource.delete({ where: { id: resourceId } }).catch(() => {});
+}
+
 
 test('admin Resource Management endpoints reject unauthenticated and counselor requests, allow admin', async () => {
     const resource = await createTestResource();
@@ -315,5 +328,352 @@ test('publishing/unpublishing through the admin endpoints is reflected live on t
         assert.ok(afterRepublish.body.some((r: any) => r.id === resource.id), 'publishing again should make it public again');
     } finally {
         await prisma.resource.delete({ where: { id: resource.id } });
+    }
+});
+
+async function attachFile(agent: ReturnType<typeof request.agent>, resourceId: number, filename: string, extra?: (req: any) => any) {
+    let req = agent
+        .patch(`/api/resources/update/${resourceId}`)
+        .attach('newFiles', Buffer.from(`%PDF-1.4 ${filename}`), {
+            filename,
+            contentType: 'application/pdf',
+        });
+    return extra ? extra(req) : req;
+}
+
+
+// Every successful PATCH resets status to 'unseen', clears note, and bumps
+// updatedAt - regardless of whether description/files were touched.
+function assertResetToUnseen(reloaded: { status: string | null | undefined; note: string | null | undefined; updatedAt: Date | null | undefined }, beforeRequestTime: Date) {
+    assert.equal(reloaded.status, 'unseen');
+    assert.equal(reloaded.note, '');
+    assert.ok(reloaded.updatedAt, 'updatedAt should be set');
+    assert.ok(
+        new Date(reloaded.updatedAt!).getTime() >= beforeRequestTime.getTime(),
+        `expected updatedAt (${reloaded.updatedAt}) to be at or after the request time (${beforeRequestTime.toISOString()})`
+    );
+}
+ 
+test('1. no file, description updated -> description updates, no files are created, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource({ description: 'original description', status: 'revision', note: 'fix this' });
+    const beforeRequestTime = new Date();
+    try {
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('description', 'updated description only');
+ 
+        assert.equal(res.status, 200);
+        assert.equal(res.body.description, 'updated description only');
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id }, include: { files: true } });
+        assert.equal(reloaded?.description, 'updated description only');
+        assert.equal(reloaded?.files.length, 0);
+        assert.ok(reloaded);
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('2a. no file -> a file is added, description untouched when not sent, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource({ description: 'keep me', status: 'revision', note: 'fix this' });
+    const beforeRequestTime = new Date();
+    try {
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .attach('newFiles', Buffer.from('%PDF-1.4 first file'), {
+                filename: 'first-file.pdf',
+                contentType: 'application/pdf',
+            });
+        assert.equal(res.status, 200);
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id }, include: { files: true } });
+        assert.equal(reloaded?.description, 'keep me');
+        assert.equal(reloaded?.files.length, 1);
+        const [uploadedFile] = reloaded?.files ?? [];
+        assert.ok(uploadedFile, 'expected a file at index 0');
+        assert.match(uploadedFile!.fileName, /first-file\.pdf$/);
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+ 
+        const uploadedFileName = uploadedFile!.fileName;
+        const { data: bucketFiles } = await supabase.storage.from('resources').list('', { search: uploadedFileName });
+        assert.ok(bucketFiles?.some((f) => f.name === uploadedFileName));
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('2b. no file -> a file is added AND description is updated in the same request, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource({ description: 'old', status: 'revision', note: 'fix this' });
+    const beforeRequestTime = new Date();
+    try {
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('description', 'new')
+            .attach('newFiles', Buffer.from('%PDF-1.4 file'), {
+                filename: 'combo.pdf',
+                contentType: 'application/pdf',
+            });
+        assert.equal(res.status, 200);
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id }, include: { files: true } });
+        assert.equal(reloaded?.description, 'new');
+        assert.equal(reloaded?.files.length, 1);
+        const [uploadedFile] = reloaded?.files ?? [];
+        assert.ok(uploadedFile, 'expected a file at index 0');
+        assert.match(uploadedFile!.fileName, /combo\.pdf$/);
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('3a. has a file -> that file is deleted from the Files table and the bucket, description untouched, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource({ description: 'keep me' });
+    try {
+        const setup = await attachFile(counselorAgent, resource.id, 'to-delete.pdf');
+        assert.equal(setup.status, 200);
+ 
+        const [file] = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.ok(file, 'setup failed: file was not created');
+        const fileName = file!.fileName;
+ 
+        // reset status/note back to something non-default so we can prove THIS request resets them
+        await prisma.resource.update({ where: { id: resource.id }, data: { status: 'revision', note: 'fix this' } });
+        const beforeRequestTime = new Date();
+ 
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('removedFileIds', JSON.stringify([file!.id]));
+        assert.equal(res.status, 200);
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id }, include: { files: true } });
+        assert.equal(reloaded?.description, 'keep me');
+        assert.equal(reloaded?.files.length, 0);
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+ 
+        const { data: bucketFiles } = await supabase.storage.from('resources').list('', { search: fileName });
+        assert.ok(!bucketFiles?.some((f) => f.name === fileName), 'file object should be gone from the bucket');
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('3b. has a file -> that file is deleted AND description is updated in the same request, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource({ description: 'old' });
+    try {
+        const setup = await attachFile(counselorAgent, resource.id, 'to-delete-2.pdf');
+        assert.equal(setup.status, 200);
+ 
+        const [file] = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.ok(file, 'setup failed: file was not created');
+ 
+        await prisma.resource.update({ where: { id: resource.id }, data: { status: 'revision', note: 'fix this' } });
+        const beforeRequestTime = new Date();
+ 
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('description', 'new')
+            .field('removedFileIds', JSON.stringify([file!.id]));
+        assert.equal(res.status, 200);
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id }, include: { files: true } });
+        assert.equal(reloaded?.description, 'new');
+        assert.equal(reloaded?.files.length, 0);
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('4. has a file -> another file is added, both remain and both point to the same resource, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource();
+    try {
+        const setup = await attachFile(counselorAgent, resource.id, 'first.pdf');
+        assert.equal(setup.status, 200);
+ 
+        await prisma.resource.update({ where: { id: resource.id }, data: { status: 'revision', note: 'fix this' } });
+        const beforeRequestTime = new Date();
+ 
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .attach('newFiles', Buffer.from('%PDF-1.4 second'), {
+                filename: 'second.pdf',
+                contentType: 'application/pdf',
+            });
+        assert.equal(res.status, 200);
+ 
+        const files = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.equal(files.length, 2);
+        assert.ok(files.every((f) => f.resourceId === resource.id));
+        assert.ok(files.some((f) => f.fileName.includes('first.pdf')));
+        assert.ok(files.some((f) => f.fileName.includes('second.pdf')));
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id } });
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('5. has two files -> one is deleted, the other remains and still points to the resource, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource();
+    try {
+        const setupA = await attachFile(counselorAgent, resource.id, 'keep-this.pdf');
+        assert.equal(setupA.status, 200);
+        const setupB = await attachFile(counselorAgent, resource.id, 'delete-this.pdf');
+        assert.equal(setupB.status, 200);
+ 
+        const filesBefore = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.equal(filesBefore.length, 2);
+        const toDelete = filesBefore.find((f) => f.fileName.includes('delete-this.pdf'));
+        assert.ok(toDelete, 'setup failed: expected file was not found');
+ 
+        await prisma.resource.update({ where: { id: resource.id }, data: { status: 'revision', note: 'fix this' } });
+        const beforeRequestTime = new Date();
+ 
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('removedFileIds', JSON.stringify([toDelete!.id]));
+        assert.equal(res.status, 200);
+ 
+        const filesAfter = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.equal(filesAfter.length, 1);
+        const [remainingFile] = filesAfter;
+        assert.ok(remainingFile, 'expected a remaining file at index 0');
+        assert.match(remainingFile!.fileName, /keep-this\.pdf$/);
+        assert.equal(remainingFile!.resourceId, resource.id);
+ 
+        const { data: bucketFiles } = await supabase.storage.from('resources').list('', { search: toDelete!.fileName });
+        assert.ok(!bucketFiles?.some((f) => f.name === toDelete!.fileName));
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id } });
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('6. has two files -> a third is added, all three remain and point to the same resource, status/note/updatedAt reset', async () => {
+    const resource = await createTestResource();
+    try {
+        const setupA = await attachFile(counselorAgent, resource.id, 'one.pdf');
+        assert.equal(setupA.status, 200);
+        const setupB = await attachFile(counselorAgent, resource.id, 'two.pdf');
+        assert.equal(setupB.status, 200);
+ 
+        await prisma.resource.update({ where: { id: resource.id }, data: { status: 'revision', note: 'fix this' } });
+        const beforeRequestTime = new Date();
+ 
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .attach('newFiles', Buffer.from('%PDF-1.4 three'), {
+                filename: 'three.pdf',
+                contentType: 'application/pdf',
+            });
+        assert.equal(res.status, 200);
+ 
+        const files = await prisma.file.findMany({ where: { resourceId: resource.id } });
+        assert.equal(files.length, 3);
+        assert.ok(files.every((f) => f.resourceId === resource.id));
+        assert.ok(files.some((f) => f.fileName.includes('one.pdf')));
+        assert.ok(files.some((f) => f.fileName.includes('two.pdf')));
+        assert.ok(files.some((f) => f.fileName.includes('three.pdf')));
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id } });
+        assertResetToUnseen(reloaded!, beforeRequestTime);
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+    }
+});
+ 
+test('PATCH /api/resources/:id ignores a removedFileIds entry that does not belong to this resource', async () => {
+    const resourceA = await createTestResource();
+    const resourceB = await createTestResource();
+    try {
+        const setupRes = await attachFile(counselorAgent, resourceA.id, 'belongs-to-a.pdf');
+        assert.equal(setupRes.status, 200, `setup upload failed: ${JSON.stringify(setupRes.body)}`);
+ 
+        const [fileOnA] = await prisma.file.findMany({ where: { resourceId: resourceA.id } });
+        assert.ok(fileOnA, 'setup failed: file was not created on resource A');
+        const fileOnAId = fileOnA!.id;
+ 
+        // try to delete resource A's file while patching resource B
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resourceB.id}`)
+            .field('removedFileIds', JSON.stringify([fileOnAId]));
+        assert.equal(res.status, 200);
+ 
+        const stillThere = await prisma.file.findUnique({ where: { id: fileOnAId } });
+        assert.ok(stillThere, "another resource's file should not be deletable through this route");
+    } finally {
+        await cleanupResourceAndFiles(resourceA.id);
+        await cleanupResourceAndFiles(resourceB.id);
+    }
+});
+
+async function createSecondCounselorAgent() {
+    const role = await prisma.role.upsert({
+        where: { role: 'counselor' },
+        update: {},
+        create: { role: 'counselor' },
+    });
+ 
+    const user = await prisma.user.upsert({
+        where: { email: 'second-counselor@example.com' },
+        update: {},
+        create: {
+            email: 'second-counselor@example.com',
+            password: 'not-used-jwt-is-signed-directly',
+            role: { connect: { id: role.id } },
+        },
+    });
+ 
+    const token = jwt.sign(
+        { id: user.id, email: user.email, role: 'counselor', type: 'auth' },
+        process.env.JWT_SECRET as string,
+        { expiresIn: '1h' }
+    );
+ 
+    const agent = request.agent(app);
+    // supertest agents don't persist a cookie unless it comes from a real
+    // Set-Cookie response, so requests are made with an explicit header
+    // instead of relying on the agent's cookie jar.
+    return { userId: user.id, cookie: `token=${token}` };
+}
+ 
+test("a counselor cannot update another counselor's resource", async () => {
+    const resource = await createTestResource({ description: 'owned by the seeded counselor' });
+    const other = await createSecondCounselorAgent();
+ 
+    try {
+        const res = await request(app)
+            .patch(`/api/resources/update/${resource.id}`)
+            .set('Cookie', other.cookie)
+            .field('description', 'should not be allowed');
+ 
+        assert.notEqual(res.status, 200, 'a non-owning counselor should not be able to update this resource');
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id } });
+        assert.equal(reloaded?.description, 'owned by the seeded counselor', 'description should be unchanged');
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
+        await prisma.user.deleteMany({ where: { id: other.userId } });
+    }
+});
+ 
+test('a counselor CAN update their own resource', async () => {
+    const resource = await createTestResource({ description: 'owned by the seeded counselor' });
+    try {
+        const res = await counselorAgent
+            .patch(`/api/resources/update/${resource.id}`)
+            .field('description', 'updated by the owning counselor');
+ 
+        assert.equal(res.status, 200);
+ 
+        const reloaded = await prisma.resource.findUnique({ where: { id: resource.id } });
+        assert.equal(reloaded?.description, 'updated by the owning counselor');
+    } finally {
+        await cleanupResourceAndFiles(resource.id);
     }
 });

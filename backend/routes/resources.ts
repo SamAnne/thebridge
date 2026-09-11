@@ -2,7 +2,7 @@ import multer from 'multer';
 import { supabase } from '../db/supabaseClient';
 import { prisma } from '../db/connection';
 import express, { Request, Response, NextFunction } from 'express';
-import { requireRole } from '../routes/roles';
+import { requireRole, requireAuth } from '../routes/roles';
 import Role from '../models/role';
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.post('/', requireRole(Role.Admin, Role.Counselor), upload.array('files', 
                 await prisma.file.create({
                     data: {
                         url: publicUrlData.publicUrl,
-                        fileName: file.originalname,
+                        fileName: fileName,
                         resource: { connect: { id: newResource.id } }
                     }
                 });
@@ -60,6 +60,16 @@ router.get('/user/:id', requireRole(Role.Admin), async (req: Request, res: Respo
     const resources = await prisma.resource.findMany({
         where: { userId: Number(req.params.id) },
         select: { description: true, status: true, note: true, date: true, files: true }
+    });
+    res.json(resources);
+});
+
+// counselor getting their resources
+router.get('/me', requireRole(Role.Counselor), async (req: Request, res: Response) => {
+    const actingUserId = (req as any).user.id;
+    const resources = await prisma.resource.findMany({
+        where: { userId: Number(actingUserId) },
+        select: { id: true, description: true, status: true, note: true, date: true, files: true }
     });
     res.json(resources);
 });
@@ -124,6 +134,104 @@ router.get('/public', async (req: Request, res: Response) => {
         orderBy: { date: 'desc' }
     });
     res.json(resources);
+});
+
+// delete from bucket first then update the resources table
+// so there are no stranglers in the bucket that take up extra space
+router.patch('/update/:id', requireRole(Role.Admin, Role.Counselor), upload.array('newFiles', 10), async (req: Request, res: Response) => {
+    const actingUserId = (req as any).user.id;
+    const resourceId = Number(req.params.id);
+    // updatedAt date to current
+    // status to unseen
+    // note to ""
+    const { removedFileIds, description } = req.body;
+    const newFiles = req.files as Express.Multer.File[];
+
+    try {
+        const resource = await prisma.resource.findUnique({ where: { id: resourceId } });
+
+        if (!resource) {
+            return res.status(404).json({ error: 'Resource not found' });
+        }
+
+        // counselors may only edit their own resources; admins can edit any
+        if (resource.userId !== actingUserId) {
+            return res.status(403).json({ error: 'Not allowed to edit this resource' });
+        }
+
+        const idsToRemove: number[] = JSON.parse(removedFileIds || '[]') as number[];
+
+        if (idsToRemove.length > 0) {
+            const filesToDelete = await prisma.file.findMany({
+                where: { id: { in: idsToRemove }, resourceId }
+            });
+
+            const paths = filesToDelete.map(f => f.fileName);
+            if (paths.length > 0) {
+                const { error } = await supabase.storage.from('resources').remove(paths);
+                if (error) console.error('Storage delete error:', error);
+            }
+
+            await prisma.file.deleteMany({
+                where: { id: { in: idsToRemove }, resourceId }
+            });
+        }
+
+        for (const file of newFiles || []) {
+            const fileName = `${Date.now()}_${file.originalname}`;
+            const { error: uploadError } = await supabase.storage
+                .from('resources')
+                .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+            if (uploadError) continue;
+
+
+            const { data: publicUrlData } = supabase.storage
+                .from('resources')
+                .getPublicUrl(fileName);
+
+            await prisma.file.create({
+                data: {
+                    url: publicUrlData.publicUrl,
+                    fileName: fileName,
+                    resource: { connect: { id: resourceId } }
+                }
+            });
+        }
+
+        const resourceUpdateData: {
+            description?: string;
+            updatedAt: Date;
+            status: string;
+            note: string;
+        } = {
+            updatedAt: new Date(),
+            status: 'unseen',
+            note: ''
+        };
+
+        if (description !== undefined) {
+            resourceUpdateData.description = description;
+        }
+
+        await prisma.resource.update({
+            where: { id: resourceId },
+            data: resourceUpdateData
+        });
+
+        const updatedResource = await prisma.resource.findUnique({
+            where: { id: resourceId },
+            select: { status: true, note: true, description: true, files: true }
+        });
+        if (!updatedResource) {
+            return res.status(404).json({ error: 'Resource not found' });
+        }
+
+        res.json(updatedResource);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // Admin edit: only description/counties/districts are writable here.

@@ -9,7 +9,7 @@
 }
 
 .page--narrow {
-    max-width: 420px;
+    max-width: 450px;
 }
 
 .page--centered {
@@ -226,6 +226,16 @@
     margin-bottom: 16px;
 }
 
+.alert-success {
+    background: var(--uvu-success-bg);
+    color: var(--uvu-success);
+    border: 1px solid var(--uvu-success);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
 .role-pill {
     display: inline-block;
     padding: 3px 12px;
@@ -341,4 +351,22 @@
     padding: 32px 20px;
     text-align: center;
     color: var(--uvu-silver);
+}
+
+.file-div {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    gap: 2rem;
+}
+
+.link-right {
+    color: var(--uvu-green);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.link-right:hover{
+    text-decoration: underline;
 }
