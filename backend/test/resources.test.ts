@@ -358,6 +358,9 @@ test('POST /api/resources is rejected when submissions are closed, allowed when 
         if (createdId) {
             await prisma.resource.delete({ where: { id: createdId } });
         }
+    }
+});
+
 async function attachFile(agent: ReturnType<typeof request.agent>, resourceId: number, filename: string, extra?: (req: any) => any) {
     let req = agent
         .patch(`/api/resources/update/${resourceId}`)
