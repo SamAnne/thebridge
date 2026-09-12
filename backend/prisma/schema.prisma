@@ -74,14 +74,6 @@ model File {
   resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 }
 
-model Settings {
-  id                   Int     @id @default(1)
-  hubName              String  @default("The Bridge")
-  contactEmail         String  @default("")
-  defaultCounty        String?
-  acceptingSubmissions Boolean @default(true)
-}
-
 model Domains {
   id        Int      @id @default(autoincrement())
   domain    String   @unique
