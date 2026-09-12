@@ -20,8 +20,18 @@ router.post('/', requireRole(Role.Admin, Role.Counselor), upload.array('files', 
         const userId = (req as any).user.id;
         const files = req.files as Express.Multer.File[];
 
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { district: true, county: true }
+        });
+
+        if (!user) return res.json({ error: 'Could not find user' });
+
+        const districtArr = [user.district].filter((district): district is string => district !== null);
+        const countyArr = [user.county].filter((county): county is string => county !== null);
+
         const newResource = await prisma.resource.create({
-            data: { user: { connect: { id: Number(userId) }}, status: 'unseen', description: String(description), note: '' }
+            data: { user: { connect: { id: Number(userId) }}, status: 'unseen', description: String(description), note: '', districts: districtArr, counties: countyArr }
         });
 
         if (files && files.length > 0) {

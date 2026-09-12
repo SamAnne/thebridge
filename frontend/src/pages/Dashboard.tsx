@@ -172,7 +172,7 @@ function Dashboard() {
                     }
                 }
                 console.log("finished appending");
-                const res = await fetch('http://localhost:5000/api/resources/update' + resourceId, {
+                const res = await fetch('http://localhost:5000/api/resources/update/' + resourceId, {
                     method: 'PATCH',
                     credentials: 'include',
                     body: formData,
