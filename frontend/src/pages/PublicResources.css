@@ -1,3 +1,19 @@
+.public-resources__contact {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--uvu-silver);
+}
+
+.public-resources__contact a {
+    color: var(--uvu-green);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.public-resources__contact a:hover {
+    text-decoration: underline;
+}
+
 .public-resources__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

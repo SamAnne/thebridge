@@ -5,6 +5,7 @@ import loginRouter from './routes/login';
 import logoutRouter from './routes/logout';
 import resourcesRouter from './routes/resources';
 import usersRouter from './routes/users';
+import settingsRouter from './routes/settings';
 import signupRouter from './routes/signup';
 import verifyRouter from './routes/verification';
 import cors from 'cors';
@@ -45,6 +46,7 @@ app.use('/signup', signupRouter);
 app.use('/verify', verifyRouter);
 app.use('/api/resources', resourcesRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/settings', settingsRouter)
 
 if (require.main === module) {
     const PORT = process.env.PORT || 5000;

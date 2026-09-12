@@ -24,6 +24,9 @@ test('a note typed on one resource is not submitted for a different resource', a
     await page.route('http://localhost:5000/api/resources/status', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) })
     );
+    await page.route('http://localhost:5000/api/settings', route =>
+        route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: 'hub@example.com', defaultCounty: null, acceptingSubmissions: true }) })
+    );
 
     await page.goto('/Dashboard');
 

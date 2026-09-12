@@ -45,10 +45,11 @@ function FileWithPreview({ file }: { file: PublicResourceFile }) {
 }
 
 function PublicResources() {
-    const { resources, error, filtered } = useLoaderData() as {
+    const { resources, error, filtered, contactEmail } = useLoaderData() as {
         resources: PublicResource[];
         error: string | null;
         filtered: boolean;
+        contactEmail: string;
     };
 
     return (
@@ -62,6 +63,11 @@ function PublicResources() {
                             ? 'Published resources for students, families, and counselors.'
                             : `${resources.length} resource${resources.length === 1 ? '' : 's'} available`}
                     </p>
+                    {contactEmail && (
+                        <p className="public-resources__contact">
+                            Questions? <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+                        </p>
+                    )}
                 </div>
                 <div className="page__header-actions">
                     <Link className="btn btn--outline btn--small" to="/">Home</Link>
