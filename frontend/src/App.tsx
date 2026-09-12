@@ -12,6 +12,8 @@ import AdminSettings from './pages/AdminSettings'
 import { loader as adminSettingsLoader } from './pages/AdminSettings.loader'
 import NavigationProgress from './components/NavigationProgress'
 import './App.css'
+import SignUp from './pages/SignUp'
+import Verify from './pages/Verify'
 
 function RootLayout() {
   return (
@@ -32,6 +34,8 @@ const router = createBrowserRouter(
         <Route path="/Admin/Users" element={<AdminUsers/>} loader={adminUsersLoader}/>
         <Route path="/Admin/Resources" element={<AdminResources/>} loader={adminResourcesLoader}/>
         <Route path="/Admin/Settings" element={<AdminSettings/>} loader={adminSettingsLoader}/>
+        <Route path='/Signup' element={<SignUp></SignUp>}/>
+        <Route path='/Verify' element={<Verify></Verify>}/>
       </Route>
   )
 );

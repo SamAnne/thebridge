@@ -3,6 +3,7 @@ import { useLoaderData, useNavigate, redirect } from 'react-router-dom';
 import { logout } from '../lib/auth';
 import AppHeader from '../components/AppHeader';
 import './Dashboard.css';
+import '../App.css';
 
 // /api/me, /api/resources/unseen, and /api/settings are fetched
 // concurrently. Unlike the other admin pages, /api/me stays the
@@ -31,6 +32,15 @@ export async function loader(){
 
     if (meResult.role === 'admin'){
         const resources = Array.isArray(resourcesResult) ? resourcesResult : [];
+        return [meResult, resources, acceptingSubmissions];
+    }
+    if (meResult.role === 'counselor'){
+        const response = await fetch('http://localhost:5000/api/resources/me', {
+            credentials: 'include'
+        });
+        const resourcesCounselor = await response.json();
+        console.log(resourcesCounselor);
+        const resources = Array.isArray(resourcesCounselor) ? resourcesCounselor : [];
         return [meResult, resources, acceptingSubmissions];
     }
     return [meResult, null, acceptingSubmissions];
@@ -97,12 +107,13 @@ function Dashboard() {
 
     interface Resource {
         id: number;
-        user: User;
+        user?: User;
         description: string;
         status: string;
         note: string;
         date: string;
         files: File[];
+        error?: string;
     }
 
     interface File {
@@ -110,12 +121,14 @@ function Dashboard() {
         url: string;
         fileName: string;
         resourceId: number;
+        delete?: boolean;
     }
 
     const items = useLoaderData() as any[]
     const [user, setUser] = useState<User>(items[0]);
-    const [unseenResources, setUnseenResources] = useState<Resource[] | null>(items[1]);
     const [acceptingSubmissions, setAcceptingSubmissions] = useState<boolean>(items[2]);
+    const [unseenResources, setUnseenResources] = useState<Resource[]>(items[1]);
+    const [counselorResources, setcounselorResources] = useState<Resource[]>(items[1]);
     const descriptionVal = useRef<HTMLInputElement>(null);
     // One note input per rendered card, keyed by resource id - a single
     // shared ref here would only ever point at the last-rendered card's
@@ -124,11 +137,101 @@ function Dashboard() {
     const noteRefs = useRef<Map<number, HTMLInputElement>>(new Map());
     const fileVal = useRef<HTMLInputElement>(null);
     const [error, setError] = useState('');
+    const [confirmation, setConfirmation] = useState('');
     const navigate = useNavigate();
+    const updateResource = async (e: React.SubmitEvent<HTMLFormElement>, resourceId: Number) =>{
+        e.preventDefault();
+        console.log("resourceid is " + resourceId);
+        try {
+            const data = new FormData(e.currentTarget);
+            const resource = counselorResources.find(resource => resource.id === resourceId);
+            if (resource){
+                resource.error = undefined;
+                const deletedFileIds = resource.files
+                    .filter(file => file.delete === true)
+                    .map(file => file.id);
+                const formData = new FormData();
+                formData.append('description', data.get('description') || '');
+                formData.append('removedFileIds', JSON.stringify(deletedFileIds || []));
+                const files = data.getAll("files");
+                // for ts
+                const allFiles = files
+                    .filter((file): file is globalThis.File => file instanceof File)
+                    .filter((file) => file.size > 0);
+                if (allFiles){
+                    for (const file of Array.from(allFiles)) {
+                        const allowedTypes = [
+                        'application/pdf',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        ];
+
+                        if (!allowedTypes.includes(file.type)) {
+                            throw new Error('File type not allowed');
+                        }
+                        formData.append('newFiles', file);
+                    }
+                }
+                console.log("finished appending");
+                const res = await fetch('http://localhost:5000/api/resources/update' + resourceId, {
+                    method: 'PATCH',
+                    credentials: 'include',
+                    body: formData,
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'Could not update resource');
+                }
+                const updatedResource = await res.json(); // { status, note, description, files } — no id, that's fine
+
+                setcounselorResources((prev) =>
+                    prev.map((r) =>
+                        r.id === resourceId ? { ...r, ...updatedResource } : r
+                    )
+                );
+            }
+            console.log(data);
+        }
+        catch (error) {
+            setcounselorResources((prev) =>
+                prev.map((r) =>
+                    r.id === resourceId ? { ...r, error: 'Something went wrong, could not updated resource' } : r
+                )
+            );
+        }
+    }
+
+    function deleteFile(resourceId: number, fileId: number){
+        // sets delete to true in counselorResources, but loads back when reloading
+        // just for keeping track for updating the resource for resubmission
+        setcounselorResources(counselorResources => counselorResources.map(resource => {
+            if (resource.id === resourceId) {
+            return {
+                ...resource,
+                files: resource.files.map(file => {
+                if (file.id === fileId) {
+                    return {
+                    ...file,
+                    delete: true 
+                    };
+                }
+                return file; 
+                })
+            };
+            }
+            return resource;
+        })
+        );
+    }
 
     async function handleLogout() {
         await logout();
         navigate('/Login');
+    }
+
+    function displayFileName(fileName: string): string {
+        const underscoreIndex = fileName.indexOf('_');
+        return underscoreIndex !== -1 ? fileName.slice(underscoreIndex + 1) : fileName;
     }
 
     async function postStatus(status: string, id: number) {
@@ -152,9 +255,11 @@ function Dashboard() {
         // add loading?
         try {
             setError('');
+            setConfirmation('');
             const formData = new FormData();
             const files = fileVal.current?.files;
             formData.append('description', descriptionVal.current?.value || '');
+            // add a limit of 10
             if (files){
                 for (const file of Array.from(files)) {
                     const allowedTypes = [
@@ -175,23 +280,55 @@ function Dashboard() {
                 credentials: 'include',
                 body: formData,
             });
-            const data = await response.json().catch(() => null);
-            if (!response.ok || (data && data.error)) {
-                setError(data?.error || 'Could not add resource');
-                return;
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Could not update resource');
             }
-            alert('Successfully added resource!');
+            
+            const updatedResource: any = await res.json(); // { status, note, description, files } — no id, that's fine
+            const resource: Resource = {
+                id: updatedResource.id,
+                description: updatedResource.description,
+                status: updatedResource.status,
+                note: updatedResource.note,
+                date: updatedResource.date,
+                files: updatedResource.files.map((child: any) => ({
+                    id: child.id,
+                    url: child.url,
+                    fileName: child.fileName,
+                    resourceId: child.resourceId
+                }))
+            }
+            setcounselorResources(prev => [...prev, resource]);
+            setConfirmation("Successfully added resource!");
+            descriptionVal.current && (descriptionVal.current.value = "");
+            fileVal.current && (fileVal.current.value = "");
         }
         catch (error) {
             setError('Could not add resource');
         }
     }
 
+    function getStatusColor(status: string): string {
+        switch (status) {
+            case 'approved': return 'green';
+            case 'rejected': return 'orange';
+            case 'revision': return 'red';
+            case 'unseen': return 'gray';
+            default: return 'gray';
+        }
+    }
+    
 
     useEffect(() => {
         setUser(items[0]);
-        setUnseenResources(items[1]);
         setAcceptingSubmissions(items[2]);
+        if (user.role === 'admin'){
+            setUnseenResources(items[1]);
+        }
+        else if (user.role === 'counselor'){
+            setcounselorResources(items[1])
+        }
     }, [items]);
 
 
@@ -290,13 +427,84 @@ function Dashboard() {
                             </input>
                         </div>
                         {error.length > 0 && (<p className="alert-error">{error}</p>)}
-                        <button className="btn btn--primary" type='submit'>Submit Resource</button>
+                        <div className="file-div">
+                            <button className="btn btn--primary" type='submit'>Submit Resource</button>
+                            {confirmation.length > 0 && (<span className="success-txt">{confirmation}</span>)} 
+                        </div>
                     </form>
                 ) : (
                     <p className="empty-state">Submissions are currently closed. Please check back later.</p>
                 )}
+                <div>
+                    <h5>Revision Requested Resources</h5>
+                    <div className="resource-grid">
+                        {counselorResources?.filter((r) => r.status === 'revision').length === 0 && <p>No resources to revise.</p>}
+                        {counselorResources && counselorResources.filter((r) => r.status === 'revision').map((resource, index) =>
+                        (
+                            <form className="card resource-card" key={resource.id} onSubmit={(e) => updateResource(e, resource.id)}>
+                                <h4>Resource {index}</h4>
+                                <div className="field">
+                                    <label htmlFor='description'>Description</label>
+                                    <input name="description" type="text" defaultValue={resource.description || ""}></input>
+                                </div>
+                                {resource.files.length === 0 && <p style={{fontSize: 12}}>No files attached</p>}
+                                <div className="field">
+                                    {resource.files.map((file, index) => (
+                                        <div>
+                                            {!file.delete && ( 
+                                                <div className="file-div">
+                                                    <FileRowItem key={index} name={displayFileName(file.fileName)} url={file.url} />
+                                                    <button className="close-button" type="button" onClick={() => deleteFile(resource.id, file.id)}>x</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    
+                                </div>
+                                <div className="field">
+                                    <label htmlFor="files">Select file/s</label>
+                                    <input
+                                        id="files"
+                                        name="files"
+                                        type="file"
+                                        accept="application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                        multiple
+                                    >
+                                    </input>
+                                </div>
+                                <span className="resource-card__date">{new Date(resource.date).toLocaleString()}</span>
+                                <p className="resource-card__note">
+                                    Note: {resource.note}
+                                </p>
+                                {resource.error && (<p className="alert-error">{resource.error}</p>)}
+                                <button className="btn btn--primary" type="submit">Resubmit Resource</button>
+                            </form>
+                        )
+                        )}
+                    </div>
+                    <h5>My Resources</h5>
+                    <div className="resource-grid">
+                        {counselorResources?.length === 0 && <p>No resources submitted.</p>}
+                        {counselorResources && counselorResources.filter((r) => r.status !== 'revision').map((resource, index) =>
+                        (
+                            <div className="card resource-card" key={resource.id}>
+                                <h4>Resource {index} <span className="resource-card__status" style={{ backgroundColor: getStatusColor(resource.status) }}>{resource.status.charAt(0).toUpperCase() + resource.status.slice(1)}</span></h4>
+                                <p>{resource.description}</p>
+                                <div>{resource.files.map((file, index) => (
+                                    <FileRowItem key={index} name={file.fileName} url={file.url} />
+                                )
+                                )}
+                                </div>
+                                <span className="resource-card__date">{new Date(resource.date).toLocaleString()}</span>
+                                <p className="resource-card__note">
+                                    Note: {resource.note? resource.note : "No Note"}
+                                </p>
+                            </div>
+                        )
+                        )}
+                    </div>
+                </div>
             </div>
-            // add all of user resources? with notes and status
         )}
 
         </div>
