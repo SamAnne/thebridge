@@ -15,6 +15,14 @@ test('counselor sees the submit form when submissions are open', async ({ page }
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: 'hub@example.com', defaultCounty: null, acceptingSubmissions: true }) })
     );
 
+    await page.route('http://localhost:5000/api/resources/me', route =>
+        route.fulfill({ 
+            status: 200, 
+            contentType: 'application/json', 
+            body: JSON.stringify([])
+        })
+    );
+
     await page.goto('/Dashboard');
 
     await expect(page.getByLabel('Description')).toBeVisible();
@@ -31,6 +39,14 @@ test('counselor sees a closed message instead of the form when submissions are d
     );
     await page.route('http://localhost:5000/api/settings', route =>
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 1, hubName: 'The Bridge', contactEmail: 'hub@example.com', defaultCounty: null, acceptingSubmissions: false }) })
+    );
+
+    await page.route('http://localhost:5000/api/resources/me', route =>
+        route.fulfill({ 
+            status: 200, 
+            contentType: 'application/json', 
+            body: JSON.stringify([])
+        })
     );
 
     await page.goto('/Dashboard');
@@ -52,6 +68,14 @@ test('a submission attempt rejected server-side (race between load and submit) s
     );
     await page.route('http://localhost:5000/api/resources', route =>
         route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Resource submissions are currently closed.' }) })
+    );
+
+    await page.route('http://localhost:5000/api/resources/me', route =>
+        route.fulfill({ 
+            status: 200, 
+            contentType: 'application/json', 
+            body: JSON.stringify([])
+        })
     );
 
     await page.goto('/Dashboard');

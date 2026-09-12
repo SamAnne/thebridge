@@ -275,17 +275,17 @@ function Dashboard() {
                 }
             }
 
-            const response = await fetch('http://localhost:5000/api/resources', {
+            const res = await fetch('http://localhost:5000/api/resources', {
                 method: 'POST',
                 credentials: 'include',
                 body: formData,
             });
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || 'Could not update resource');
-            }
-            
             const updatedResource: any = await res.json(); // { status, note, description, files } — no id, that's fine
+            if (!res.ok || updatedResource.error) {
+                if (updatedResource.error) setError(updatedResource.error);
+                else setError('Could not submit resource at this time.');
+                return;
+            }
             const resource: Resource = {
                 id: updatedResource.id,
                 description: updatedResource.description,
