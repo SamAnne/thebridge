@@ -90,6 +90,13 @@ test('counselor role reaches the Dashboard and sees the submit form', async ({ p
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ error: 'Not allowed with current role.' }) })
     );
 
+    await page.route('http://localhost:5000/api/resources/me', route =>
+        route.fulfill({ 
+            status: 200, 
+            contentType: 'application/json', 
+            body: JSON.stringify([])
+        })
+    );
     await page.goto('/Dashboard');
 
     await expect(page).toHaveURL(/\/Dashboard$/);

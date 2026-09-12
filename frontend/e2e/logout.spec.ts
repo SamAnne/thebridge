@@ -13,6 +13,14 @@ test('clicking Logout on the Dashboard calls /logout and redirects to /Login', a
         route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });
     });
 
+    await page.route('http://localhost:5000/api/resources/me', route =>
+        route.fulfill({ 
+            status: 200, 
+            contentType: 'application/json', 
+            body: JSON.stringify([])
+        })
+    );
+
     await page.goto('/Dashboard');
     await page.getByRole('button', { name: 'Logout' }).click();
 
